@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,11 +21,23 @@ import { useStudio } from "@/lib/state";
 import type { ComicProject, PanelState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export default function ReadPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ReadPage() {
+  const params = useParams<{ id: string }>();
+  const projectId = params.id;
+
+  if (!projectId) {
+    return (
+      <Shell className="pb-4">
+        <div className="mt-16 rounded-2xl border border-subtle bg-surface p-8 text-center">
+          <div className="text-[13px] text-foreground/70">Invalid read link.</div>
+        </div>
+      </Shell>
+    );
+  }
+
   return (
     <Shell className="pb-4">
-      <Reader projectId={id} />
+      <Reader projectId={projectId} />
     </Shell>
   );
 }

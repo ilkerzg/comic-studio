@@ -11,15 +11,16 @@ export function useFalKey() {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY) ?? "";
-      setKeyState(stored);
+      setKeyState(stored.trim());
     } catch {}
     setLoaded(true);
   }, []);
 
   const setKey = useCallback((next: string) => {
-    setKeyState(next);
+    const value = next.trim();
+    setKeyState(value);
     try {
-      if (next) window.localStorage.setItem(STORAGE_KEY, next);
+      if (value) window.localStorage.setItem(STORAGE_KEY, value);
       else window.localStorage.removeItem(STORAGE_KEY);
     } catch {}
   }, []);

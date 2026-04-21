@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { AlertTriangle, BookOpen, Loader2, Play, Wand2 } from "lucide-react";
 import { Shell } from "@/components/Shell";
 import { FalKeyGate } from "@/components/FalKeyGate";
@@ -12,12 +13,26 @@ import { STYLES } from "@/lib/styles";
 import type { PanelState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export default function StudioPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function StudioPage() {
+  const params = useParams<{ id: string }>();
+  const projectId = params.id;
+
+  if (!projectId) {
+    return (
+      <Shell>
+        <FalKeyGate>
+          <div className="mt-16 rounded-2xl border border-subtle bg-surface p-8 text-center">
+            <div className="text-[13px] text-foreground/70">Invalid studio link.</div>
+          </div>
+        </FalKeyGate>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <FalKeyGate>
-        <StudioView projectId={id} />
+        <StudioView projectId={projectId} />
       </FalKeyGate>
     </Shell>
   );
@@ -27,10 +42,6 @@ function StudioView({ projectId }: { projectId: string }) {
   const { key } = useFalKey();
   const project = useStudio((s) => s.getProject(projectId));
   const updatePanels = useStudio((s) => s.updatePanels);
-  const setProjectStatus = useStudio((s) => {
-    return (status: "draft" | "outlining" | "rendering" | "complete" | "error") =>
-      s.registerProject({ ...(s.getProject(projectId) ?? ({} as never)), status } as never);
-  });
   const [panels, setPanels] = useState<PanelState[]>(project?.panels ?? []);
   const [phase, setPhase] = useState<"idle" | "outlining" | "rendering" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
