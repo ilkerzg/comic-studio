@@ -29,7 +29,7 @@ Open `http://localhost:3000`, save your fal API key in `/settings`, and start a 
 `.env.example`
 
 ```bash
-MODEL_ID=anthropic/claude-sonnet-4-6
+NEXT_PUBLIC_MODEL_ID=anthropic/claude-3.5-sonnet
 ```
 
-`MODEL_ID` is optional and only changes the storyboard model. Rendering still uses your fal API key.
+`NEXT_PUBLIC_MODEL_ID` is optional and only changes the storyboard model. Rendering still uses your fal API key.

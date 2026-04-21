@@ -4,6 +4,7 @@ import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import {
   configureFal,
   defaultModel,
+  openaiViaFal,
   fal,
   type StoryboardPanel,
 } from "@/lib/fal-browser";
@@ -54,65 +55,21 @@ function sizeFor(aspect: Brief["aspect"]) {
 }
 
 export async function generateStoryboard(brief: Brief, falKey: string): Promise<StoryboardPanel[]> {
-  const res = await fetch("https://fal.run/openrouter/router/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Key ${falKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: defaultModel(),
-      messages: [
-        { role: "system", content: buildSystemPrompt(brief) },
-        { role: "user", content: `Generate the storyboard now. Panel count: ${brief.panelCount}.` },
-      ],
-      tools: storyboardTools,
-      tool_choice: { type: "function", function: { name: "create_storyboard" } },
-    }),
+  const client = openaiViaFal(falKey);
+  const completion = await client.chat.completions.create({
+    model: defaultModel(),
+    messages: [
+      { role: "system", content: buildSystemPrompt(brief) },
+      { role: "user", content: `Generate the storyboard now. Panel count: ${brief.panelCount}.` },
+    ],
+    tools: storyboardTools,
+    tool_choice: { type: "function", function: { name: "create_storyboard" } },
   });
-
-  const json = (await res.json().catch(() => null)) as
-    | {
-        error?: { message?: string } | string;
-        choices?: Array<{
-          message?: {
-            content?: string | Array<{ type?: string; text?: string }>;
-            tool_calls?: Array<{
-              type?: string;
-              function?: { arguments?: string };
-            }>;
-          };
-        }>;
-      }
-    | null;
-
-  if (!res.ok) {
-    const message =
-      typeof json?.error === "string"
-        ? json.error
-        : json?.error?.message ?? `Storyboard failed (${res.status})`;
-    throw new Error(message);
+  const call = completion.choices[0]?.message?.tool_calls?.[0];
+  if (!call || call.type !== "function" || !call.function?.arguments) {
+    throw new Error("Model did not return a storyboard");
   }
-
-  const message = json?.choices?.[0]?.message;
-  const call = message?.tool_calls?.find((item) => item.type === "function");
-
-  let raw: { panels: StoryboardPanel[] | string } | null = null;
-  if (call?.function?.arguments) {
-    raw = JSON.parse(call.function.arguments) as { panels: StoryboardPanel[] | string };
-  } else {
-    const content = Array.isArray(message?.content)
-      ? message.content
-          .filter((part) => part.type === "text" && typeof part.text === "string")
-          .map((part) => part.text)
-          .join("\n")
-      : typeof message?.content === "string"
-        ? message.content
-        : "";
-    if (!content.trim()) throw new Error("Model did not return a storyboard");
-    raw = JSON.parse(content) as { panels: StoryboardPanel[] | string };
-  }
-
+  const raw = JSON.parse(call.function.arguments) as { panels: StoryboardPanel[] | string };
   const arr: StoryboardPanel[] = Array.isArray(raw.panels)
     ? raw.panels
     : typeof raw.panels === "string"
