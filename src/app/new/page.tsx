@@ -17,6 +17,8 @@ import {
 import { Shell } from "@/components/Shell";
 import { FalKeyGate } from "@/components/FalKeyGate";
 import { useFalKey } from "@/lib/fal-key";
+import { uploadToFalStorage } from "@/lib/fal-browser";
+import { renderCharacterSheet } from "@/lib/pipeline";
 import { useStudio } from "@/lib/state";
 import { STYLES } from "@/lib/styles";
 import type { CharacterDraft, FormatChoice } from "@/lib/types";
@@ -275,16 +277,8 @@ function CharacterCard({
     setUploading(true);
     setError(null);
     try {
-      const form = new FormData();
-      form.set("file", f);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "x-fal-key": falKey },
-        body: form,
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Upload failed");
-      onChange({ sourcePhotoUrl: json.url, sheetUrl: null, sheetStatus: "idle" });
+      const url = await uploadToFalStorage(falKey, f);
+      onChange({ sourcePhotoUrl: url, sheetUrl: null, sheetStatus: "idle" });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -297,29 +291,15 @@ function CharacterCard({
     onChange({ sheetStatus: "generating", sheetError: undefined });
     try {
       const stylePrompt = STYLES.find((s) => s.id === styleId)?.promptStub ?? "";
-      const prompt = [
-        "Character reference sheet for a comic book production.",
-        stylePrompt,
-        `Character name: ${character.name}.`,
-        `Role: ${character.role}.`,
-        `Description: ${character.description}`,
-        "Show a full-body front pose on the left third, a three-quarter pose in the middle, and a close-up head shot on the right. Plain neutral background. No text, no labels, no watermark.",
-      ].join(" ");
-
-      const res = await fetch("/api/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          falKey,
-          prompt,
-          imageUrls: character.sourcePhotoUrl ? [character.sourcePhotoUrl] : undefined,
-          aspect: "landscape",
-          quality: "high",
-        }),
+      const res = await renderCharacterSheet({
+        falKey,
+        name: character.name,
+        description: character.description,
+        role: character.role,
+        styleStub: stylePrompt,
+        photoUrl: character.sourcePhotoUrl ?? null,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Render failed");
-      onChange({ sheetUrl: json.url, sheetStatus: "ready" });
+      onChange({ sheetUrl: res.url, sheetStatus: "ready" });
     } catch (err) {
       onChange({
         sheetStatus: "failed",
