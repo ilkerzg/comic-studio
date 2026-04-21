@@ -39,4 +39,4 @@ Open:
 
 ## Optional
 
-- `NEXT_PUBLIC_MODEL_ID` can override the storyboard LLM, default is `anthropic/claude-3.5-sonnet`.
+- `NEXT_PUBLIC_MODEL_ID` can override the storyboard LLM, default is `anthropic/claude-opus-4.6`.

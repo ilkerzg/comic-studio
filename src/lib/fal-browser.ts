@@ -23,7 +23,7 @@ export function openaiViaFal(key: string) {
 }
 
 export function defaultModel() {
-  return process.env.NEXT_PUBLIC_MODEL_ID ?? process.env.MODEL_ID ?? "anthropic/claude-3.5-sonnet";
+  return process.env.NEXT_PUBLIC_MODEL_ID ?? process.env.MODEL_ID ?? "anthropic/claude-opus-4.6";
 }
 
 export async function uploadToFalStorage(key: string, file: File): Promise<string> {
