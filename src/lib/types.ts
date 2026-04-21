@@ -1,0 +1,53 @@
+export type CharacterRole = "protagonist" | "antagonist" | "ally" | "side";
+
+export type CharacterDraft = {
+  id: string;
+  name: string;
+  role: CharacterRole;
+  description: string;
+  sourcePhotoUrl: string | null;
+  sheetUrl: string | null;
+  sheetStatus: "idle" | "generating" | "ready" | "failed";
+  sheetError?: string;
+};
+
+export type AspectChoice = "portrait" | "landscape" | "square";
+
+export type FormatChoice = "manga" | "comic" | "webtoon";
+
+export type Brief = {
+  styleId: string;
+  format: FormatChoice;
+  aspect: AspectChoice;
+  characters: CharacterDraft[];
+  story: string;
+  tone: string;
+  language: string;
+  panelCount: number;
+};
+
+export type PanelBeat = {
+  index: number;
+  title: string;
+  composition: string;
+  beat: string;
+  dialog: { speaker?: string; text: string }[];
+  imageRefs: string[];
+  prompt: string;
+};
+
+export type PanelState = {
+  index: number;
+  status: "pending" | "rendering" | "done" | "failed";
+  beat?: PanelBeat;
+  imageUrl?: string;
+  error?: string;
+};
+
+export type ComicProject = {
+  id: string;
+  createdAt: number;
+  brief: Brief;
+  panels: PanelState[];
+  status: "draft" | "outlining" | "rendering" | "complete" | "error";
+};

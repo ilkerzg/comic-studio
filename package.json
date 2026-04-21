@@ -1,0 +1,42 @@
+{
+  "name": "comic-studio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "gen:styles": "tsx scripts/gen-styles.ts"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.7.0",
+    "@radix-ui/react-dialog": "^1.1.11",
+    "@radix-ui/react-label": "^2.1.4",
+    "@radix-ui/react-select": "^2.1.11",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-tabs": "^1.1.7",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.540.0",
+    "next": "15.5.4",
+    "openai": "^4.83.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "tailwind-merge": "^2.6.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.6",
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "dotenv": "^17.2.2",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.4",
+    "tailwindcss": "^4.1.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}
