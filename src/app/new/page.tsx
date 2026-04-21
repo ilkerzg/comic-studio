@@ -2,33 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  Layers,
-  Plus,
-  Trash2,
-  Upload,
-  Users,
-  Wand2,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Plus, Trash2, Upload, Users, Wand2 } from "lucide-react";
 import { Shell } from "@/components/Shell";
 import { FalKeyGate } from "@/components/FalKeyGate";
 import { useFalKey } from "@/lib/fal-key";
 import { uploadToFalStorage } from "@/lib/fal-browser";
-import { renderCharacterSheet } from "@/lib/pipeline";
+import { generateCharacterPortrait } from "@/lib/pipeline";
 import { useStudio } from "@/lib/state";
 import { STYLES } from "@/lib/styles";
-import type { CharacterDraft, FormatChoice } from "@/lib/types";
+import type { CharacterDraft } from "@/lib/types";
 import { cn, uid } from "@/lib/utils";
 
 const STEPS = [
   { id: "style", label: "Style", icon: Wand2 },
   { id: "cast", label: "Cast", icon: Users },
   { id: "story", label: "Story", icon: BookOpen },
-  { id: "format", label: "Format", icon: Layers },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -53,21 +41,24 @@ function Wizard() {
 
   const canProceed = useMemo(() => {
     if (step === "style") return !!brief.styleId;
-    if (step === "cast") return brief.characters.length > 0 && brief.characters.every((c) => c.name.trim());
-    if (step === "story") return brief.story.trim().length >= 10;
-    return true;
+    if (step === "cast") {
+      return brief.characters.length > 0 && brief.characters.every((c) => c.name.trim() && c.sheetStatus === "ready");
+    }
+    return brief.story.trim().length >= 10 && brief.panelCount >= 2;
   }, [step, brief]);
 
   function next() {
     const idx = STEPS.findIndex((s) => s.id === step);
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1].id);
   }
+
   function prev() {
     const idx = STEPS.findIndex((s) => s.id === step);
     if (idx > 0) setStep(STEPS[idx - 1].id);
   }
 
   async function start() {
+    if (!canProceed) return;
     setSubmitting(true);
     const projectId = uid("project");
     const project = {
@@ -89,7 +80,9 @@ function Wizard() {
       <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
         <span>New comic</span>
         <span>·</span>
-        <span>Step {STEPS.findIndex((s) => s.id === step) + 1} of {STEPS.length}</span>
+        <span>
+          Step {STEPS.findIndex((s) => s.id === step) + 1} of {STEPS.length}
+        </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {STEPS.map((s, idx) => {
@@ -120,7 +113,6 @@ function Wizard() {
         {step === "style" && <StyleStep />}
         {step === "cast" && <CastStep falKey={key} />}
         {step === "story" && <StoryStep />}
-        {step === "format" && <FormatStep />}
       </div>
 
       <div className="mt-5 flex items-center justify-between">
@@ -130,17 +122,17 @@ function Wizard() {
           disabled={step === STEPS[0].id}
           className="inline-flex h-10 items-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[13px] text-foreground/80 hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
         >
+          <span>Back</span>
           <ArrowLeft className="h-4 w-4" />
-          Back
         </button>
-        {step === "format" ? (
+        {step === "story" ? (
           <button
             type="button"
             onClick={start}
             disabled={!canProceed || submitting}
             className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-5 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {submitting ? "Starting..." : "Start the comic"}
+            {submitting ? "Starting..." : "Start production"}
             <ArrowRight className="h-4 w-4" />
           </button>
         ) : (
@@ -162,16 +154,18 @@ function Wizard() {
 function StyleStep() {
   const brief = useStudio((s) => s.brief);
   const setStyle = useStudio((s) => s.setStyle);
+
   return (
     <div>
       <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Step 1</div>
       <h2 className="mt-2 font-[family-name:var(--font-display)] text-[28px] tracking-wider">
-        PICK A STYLE
+        CHOOSE THE STYLE
       </h2>
       <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">
-        The style prompt stub is appended to every panel render so the art stays consistent across
-        the book.
+        Style cards only set the visual system. No comic type is selected here: each style card is the
+        only direction for the book.
       </p>
+
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {STYLES.map((s) => {
           const selected = brief.styleId === s.id;
@@ -188,7 +182,6 @@ function StyleStep() {
               )}
             >
               <div className="relative aspect-[4/5] w-full bg-surface-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={s.reference}
                   alt={s.name}
@@ -227,8 +220,8 @@ function CastStep({ falKey }: { falKey: string }) {
             CAST THE STORY
           </h2>
           <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">
-            One to four characters. Upload a photo if you want the resemblance locked in; we
-            generate a stylized character sheet and reuse it on every panel.
+            Add 1 to 4 characters, fill name + description, upload a reference photo if you have one,
+            then generate the portrait for each character.
           </p>
         </div>
         {brief.characters.length < 4 && (
@@ -286,12 +279,12 @@ function CharacterCard({
     }
   }
 
-  async function generateSheet() {
+  async function generatePortrait() {
     if (!character.name.trim() || !character.description.trim()) return;
     onChange({ sheetStatus: "generating", sheetError: undefined });
     try {
       const stylePrompt = STYLES.find((s) => s.id === styleId)?.promptStub ?? "";
-      const res = await renderCharacterSheet({
+      const res = await generateCharacterPortrait({
         falKey,
         name: character.name,
         description: character.description,
@@ -356,7 +349,6 @@ function CharacterCard({
             }}
           />
           {character.sourcePhotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={character.sourcePhotoUrl}
               alt="Source"
@@ -365,23 +357,22 @@ function CharacterCard({
           ) : (
             <span className="inline-flex items-center gap-1.5">
               <Upload className="h-3.5 w-3.5" />
-              {uploading ? "Uploading..." : "Optional photo"}
+              {uploading ? "Uploading..." : "Reference photo"}
             </span>
           )}
         </label>
         <div className="relative h-28 overflow-hidden rounded-lg border border-white/[0.08] bg-black/30">
           {character.sheetUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={character.sheetUrl}
-              alt="Character sheet"
+              alt="Character portrait"
               className="h-full w-full object-cover"
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-[11.5px] text-foreground/55">
-              <span>Character sheet</span>
+              <span>Character portrait</span>
               <span className="text-[10.5px] text-foreground/40">
-                {character.sheetStatus === "generating" ? "Generating..." : "Not generated yet"}
+                {character.sheetStatus === "generating" ? "Generating..." : "Not ready"}
               </span>
             </div>
           )}
@@ -389,17 +380,19 @@ function CharacterCard({
       </div>
 
       {error && <div className="mt-2 text-[11.5px] text-red-300">{error}</div>}
-      {character.sheetError && (
-        <div className="mt-2 text-[11.5px] text-red-300">{character.sheetError}</div>
-      )}
+      {character.sheetError && <div className="mt-2 text-[11.5px] text-red-300">{character.sheetError}</div>}
 
       <div className="mt-3 flex items-center justify-between">
         <div className="text-[11px] text-foreground/50">
-          {character.sheetStatus === "ready" ? "Sheet ready" : "Generate once, reused on every panel"}
+          {character.sheetStatus === "ready"
+            ? "Portrait ready"
+            : character.sheetStatus === "generating"
+              ? "Generating with openai/gpt-image-2 (low)"
+              : "Generate portrait to continue"}
         </div>
         <button
           type="button"
-          onClick={generateSheet}
+          onClick={generatePortrait}
           disabled={
             !character.name.trim() ||
             !character.description.trim() ||
@@ -408,7 +401,7 @@ function CharacterCard({
           }
           className="inline-flex h-8 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] font-medium hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {character.sheetStatus === "generating" ? "Generating..." : "Generate sheet"}
+          {character.sheetStatus === "generating" ? "Generating..." : "Generate portrait"}
         </button>
       </div>
     </div>
@@ -418,135 +411,54 @@ function CharacterCard({
 function StoryStep() {
   const brief = useStudio((s) => s.brief);
   const setStory = useStudio((s) => s.setStory);
-  const setTone = useStudio((s) => s.setTone);
-  const setLanguage = useStudio((s) => s.setLanguage);
+  const setPanelCount = useStudio((s) => s.setPanelCount);
+
   return (
     <div>
       <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Step 3</div>
       <h2 className="mt-2 font-[family-name:var(--font-display)] text-[28px] tracking-wider">
-        WRITE THE STORY
+        STORY & OUTPUT COUNT
       </h2>
       <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">
-        A short brief is enough. The agent expands it into a storyboard and writes the panel
-        prompts for you.
+        Write your story prompt. Then choose how many panels to generate.
       </p>
 
       <div className="mt-5 flex flex-col gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Brief</span>
+          <span className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Topic / Story prompt</span>
           <textarea
             value={brief.story}
             onChange={(e) => setStory(e.target.value)}
             rows={7}
-            placeholder="A pickpocket in 1920s Istanbul tries to return a stolen pocket watch after realizing it belongs to a kind stranger who helped her mother."
+            placeholder="A pickpocket in 1920s Istanbul returns a stolen pocket watch after realizing it belonged to her mentor."
             className="w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.02] p-3 text-[13.5px] leading-relaxed placeholder:text-foreground/35 focus:border-white/[0.25] focus:outline-none"
           />
         </label>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Tone</span>
-            <input
-              value={brief.tone}
-              onChange={(e) => setTone(e.target.value)}
-              placeholder="Bittersweet, gritty, hopeful, comedic..."
-              className="h-10 rounded-lg border border-white/[0.1] bg-white/[0.02] px-3 text-[13px] focus:border-white/[0.25] focus:outline-none"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">
-              Dialog language
-            </span>
-            <input
-              value={brief.language}
-              onChange={(e) => setLanguage(e.target.value)}
-              placeholder="English"
-              className="h-10 rounded-lg border border-white/[0.1] bg-white/[0.02] px-3 text-[13px] focus:border-white/[0.25] focus:outline-none"
-            />
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function FormatStep() {
-  const brief = useStudio((s) => s.brief);
-  const setFormat = useStudio((s) => s.setFormat);
-  const setAspect = useStudio((s) => s.setAspect);
-  const setPanelCount = useStudio((s) => s.setPanelCount);
-
-  const formats: { id: FormatChoice; label: string; sub: string }[] = [
-    { id: "manga", label: "Manga", sub: "Right-to-left spreads" },
-    { id: "comic", label: "Western comic", sub: "Left-to-right spreads" },
-    { id: "webtoon", label: "Webtoon", sub: "Vertical scroll" },
-  ];
-
-  return (
-    <div>
-      <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Step 4</div>
-      <h2 className="mt-2 font-[family-name:var(--font-display)] text-[28px] tracking-wider">
-        FORMAT & LENGTH
-      </h2>
-
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {formats.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => {
-              setFormat(f.id);
-              setAspect(f.id === "webtoon" ? "portrait" : f.id === "comic" ? "landscape" : "portrait");
-            }}
-            className={cn(
-              "flex items-center justify-between rounded-xl border px-4 py-3 text-left",
-              brief.format === f.id
-                ? "border-accent/80 bg-accent/10"
-                : "border-subtle bg-surface-2 hover:border-white/20",
-            )}
-          >
-            <div>
-              <div className="font-[family-name:var(--font-display)] text-[16px] tracking-wider">
-                {f.label.toUpperCase()}
-              </div>
-              <div className="mt-0.5 text-[11.5px] text-foreground/60">{f.sub}</div>
+        <div className="mt-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="panel-count" className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">
+              Number of outputs (panels)
+            </label>
+            <div className="text-[13px] font-medium">
+              {brief.panelCount} <span className="text-foreground/50">(max 50)</span>
             </div>
-            {brief.format === f.id ? <Check className="h-4 w-4 text-accent" /> : null}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-6">
-        <div className="flex items-center justify-between">
-          <label htmlFor="panel-count" className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">
-            Panel count
-          </label>
-          <div className="text-[13px] font-medium">
-            {brief.panelCount} <span className="text-foreground/50">(max 50)</span>
+          </div>
+          <input
+            id="panel-count"
+            type="range"
+            min={2}
+            max={50}
+            step={1}
+            value={brief.panelCount}
+            onChange={(e) => setPanelCount(Number(e.target.value))}
+            className="mt-3 w-full accent-[oklch(0.75_0.2_35)]"
+          />
+          <div className="mt-2 text-[11.5px] text-foreground/55">
+            Every panel is rendered with <code className="rounded bg-white/[0.06] px-1 py-0.5 font-mono">openai/gpt-image-2/edit</code> using style + character references.
           </div>
         </div>
-        <input
-          id="panel-count"
-          type="range"
-          min={2}
-          max={50}
-          step={1}
-          value={brief.panelCount}
-          onChange={(e) => setPanelCount(Number(e.target.value))}
-          className="mt-3 w-full accent-[oklch(0.75_0.2_35)]"
-        />
-        <div className="mt-2 text-[11.5px] text-foreground/55">
-          Each panel calls <code className="rounded bg-white/[0.06] px-1 py-0.5 font-mono">openai/gpt-image-2/edit</code> with the style reference plus
-          your character sheets, billed to your fal account.
-        </div>
       </div>
     </div>
-  );
-}
-
-function Check({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
-      <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

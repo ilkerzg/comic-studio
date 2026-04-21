@@ -1,35 +1,46 @@
 # Comic Studio
 
-Comic Studio is a Next.js app for creating detailed comic books and manga with `gpt-image-2` through the fal API. Bring your own fal key, choose a style, define characters, write a story brief, and the app turns it into a multi-panel comic you can read in the browser.
+Comic Studio is a local-browser workflow for producing comic book and manga-style pages with Fal + `openai/gpt-image-2`.
 
-**Live demo:** [comic-studio-one.vercel.app](https://comic-studio-one.vercel.app) · grab a fal key from [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys).
+## What it does
 
-## Features
+1. Pick a **style card**.
+2. Add your characters (name, role, description, optional reference photo).
+3. Generate one portrait for each character with `openai/gpt-image-2` (low quality) and use those as references.
+4. Write the topic and choose how many panels to generate.
+5. The agent writes the storyboard, then generates each panel with `openai/gpt-image-2/edit`.
 
-- Create comics or manga from a single brief
-- Use up to four characters with optional photo references
-- Keep visual consistency with style presets and character sheets
-- Generate storyboards through fal OpenRouter
-- Render panels with `openai/gpt-image-2` and `openai/gpt-image-2/edit`
-- Read the result in comic, manga, or webtoon mode
-- Keep project state and fal key in browser `localStorage`
+No server-side Fal key is used. Your Fal key is stored only in browser `localStorage`.
 
-## Quick start
+## Core flow
+
+- Style cards are the only visual style selector.
+- There is no separate comic type selector in the flow.
+- Character references are reused across all panels.
+- Generated projects and history stay in local storage.
+- The prompt for each panel must include fixed markers:
+  - `#image1 ...` for style reference
+  - `#image2`, `#image3`, ... for character portraits
+  - `style reference: #image1` as the closing line
+
+## Run
 
 ```bash
 pnpm install
-cp .env.example .env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000`, save your fal API key in `/settings`, and start a comic.
+Open:
+- `http://localhost:3000` for a new project
+- `/settings` to save / replace your key
+- `/history` to view local projects
 
-## Optional configuration
+## Env
 
-`.env.example`
+Create `.env.local` if needed:
 
 ```bash
 NEXT_PUBLIC_MODEL_ID=anthropic/claude-3.5-sonnet
 ```
 
-`NEXT_PUBLIC_MODEL_ID` is optional and only changes the storyboard model. Rendering still uses your fal API key.
+`NEXT_PUBLIC_MODEL_ID` is optional. It only changes the storyboard LLM model.

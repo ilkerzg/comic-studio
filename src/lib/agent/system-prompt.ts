@@ -6,11 +6,19 @@ export function buildSystemPrompt(brief: Brief): string {
   const cast = brief.characters
     .map(
       (c) =>
-        `- ${c.name} (${c.role})${c.sheetUrl ? ` - character sheet: ${c.sheetUrl}` : ""}${
+        `- ${c.name} (${c.role})${c.sheetUrl ? ` - character portrait: ${c.sheetUrl}` : ""}${
           c.description ? `\n  ${c.description}` : ""
         }`,
     )
     .join("\n");
+
+  const referenceMap = [
+    `- #image1: STYLE reference card (${style?.name ?? "selected style"})`,
+    ...brief.characters.map(
+      (c, index) =>
+        `- #image${index + 2}: ${c.name} (${c.role})${c.sheetUrl ? ` - character portrait` : ""}`,
+    ),
+  ].join("\n");
 
   const aspectHint =
     brief.aspect === "portrait"
@@ -24,11 +32,14 @@ export function buildSystemPrompt(brief: Brief): string {
     ``,
     `Style: ${style?.name ?? brief.styleId}`,
     `Style prompt stub (include verbatim in every panel prompt): "${style?.promptStub ?? ""}"`,
-    `Format: ${brief.format} (${aspectHint}).`,
+    `Panel format baseline: ${aspectHint}.`,
     `Language for all in-panel text and dialog: ${brief.language}.`,
     ``,
     `Cast:`,
     cast || "- Solo story with no named characters.",
+    ``,
+    `Image references (fixed order):`,
+    referenceMap || "- no image references",
     ``,
     `Story brief:`,
     brief.story,
@@ -41,8 +52,19 @@ export function buildSystemPrompt(brief: Brief): string {
     `- composition: shot type and camera (close-up, wide, over-shoulder, low angle, bird's eye, Dutch angle)`,
     `- beat: one sentence describing the action or emotion`,
     `- dialog: array of { speaker, text }, at most two lines per panel; empty array if silent`,
-    `- characters: the ids of cast members present in this panel (use their provided ids)`,
-    `- prompt: the full rendering prompt. Start with the style prompt stub, then describe the scene with concrete visual detail, explicit character actions, and explicit any in-panel typography (signs, banners, lettering) spelled verbatim in quotes. Do not include speech bubbles inside the prompt text; bubbles are overlaid later. End with constraints: "No watermark. No page numbers. No border."`,
+    `- characters: the names of cast members present in this panel (match names exactly as written above)`,
+    `- prompt: a rich full rendering prompt for gpt-image-2/edit in the format below. It must use the fixed marker map above for every referenced visual entity.`,
+    `  Use lines like these exactly in every panel:`,
+    `  #image1 style reference: <one sentence about the selected style and what it enforces>`,
+    `  #image2 <Character Name>: <what they are doing + exact dialogue line if they speak>`,
+    `  #image3 <Character Name>: <their action or dialogue>`,
+    `  ...`,
+    `  style reference: #image1`,
+    `  Rules for this prompt block:`,
+    `  - Keep #image markers and marker indices aligned with the reference map.`,
+    `  - #image1 is always the style reference image and must appear as the very last line.`,
+    `  - Character lines should mention action and dialogue naturally (if a character speaks, include the exact line).`,
+    `  - The panel prompt is plain text only. No markdown.`,
     ``,
     `Rules:`,
     `- Ground every character depiction in the provided character sheets; never invent a new character.`,
