@@ -55,10 +55,10 @@ export const STYLES: StyleEntry[] = [
   },
   {
     id: "western-superhero",
-    name: "Western Action Comic",
-    tagline: "Bold ink, saturated color, action pages.",
+    name: "American Comic",
+    tagline: "Bold ink, saturated color, glossy pages.",
     promptStub:
-      "Modern Western action comic style, bold ink outlines, heavy black shadows, saturated primary colors, dynamic poses, kinetic panel composition, glossy finish.",
+      "Modern American comic book art style, bold ink outlines, heavy black shadows, saturated primary colors, expressive characters, tidy panel composition, glossy finish.",
     palette: "color",
     reference: "/styles/western-superhero.png",
   },
