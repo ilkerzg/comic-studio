@@ -50,79 +50,96 @@ function StudioView({ projectId }: { projectId: string }) {
     started.current = true;
     setError(null);
 
+    const refs = [style?.reference, ...sheetUrls].filter(Boolean) as string[];
+    const working: PanelState[] = Array.from({ length: safeBrief.panelCount }, (_, i) => ({
+      index: i + 1,
+      status: "pending",
+    }));
+    setPanels(working);
     setPhase("outlining");
-    let beats: PanelBeat[] = [];
+
     try {
-      const res = await fetch("/api/storyboard", {
+      const res = await fetch("/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brief: safeBrief, falKey: key }),
+        body: JSON.stringify({ brief: safeBrief, falKey: key, refs, concurrency: 4 }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Storyboard failed");
-      beats = (json.panels ?? []).map((p: Omit<PanelBeat, "index" | "imageRefs">, i: number) => ({
-        ...p,
-        index: i + 1,
-        imageRefs: [style?.reference, ...sheetUrls].filter(Boolean) as string[],
-      }));
+      if (!res.ok || !res.body) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error((json as { error?: string }).error ?? `Run failed (${res.status})`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let event = "";
+      let dataLines: string[] = [];
+
+      const handle = (ev: string, payload: string) => {
+        try {
+          const data = JSON.parse(payload);
+          if (ev === "phase") {
+            const ph = (data as { phase: string }).phase;
+            if (ph === "outlining") setPhase("outlining");
+            else if (ph === "rendering") setPhase("rendering");
+            else if (ph === "done") setPhase("done");
+          } else if (ev === "storyboard") {
+            const beats = (data as { panels: Omit<PanelBeat, "imageRefs">[] }).panels;
+            for (const b of beats) {
+              const idx = b.index - 1;
+              working[idx] = { index: b.index, status: "pending", beat: { ...b, imageRefs: refs } };
+            }
+            setPanels([...working]);
+            updatePanels(projectId, [...working]);
+          } else if (ev === "panel_start") {
+            const { index } = data as { index: number };
+            const i = index - 1;
+            if (working[i]) working[i] = { ...working[i], status: "rendering" };
+            setPanels([...working]);
+          } else if (ev === "panel_done") {
+            const { index, url } = data as { index: number; url: string };
+            const i = index - 1;
+            if (working[i]) working[i] = { ...working[i], status: "done", imageUrl: url };
+            setPanels([...working]);
+            updatePanels(projectId, [...working]);
+          } else if (ev === "panel_failed") {
+            const { index, error } = data as { index: number; error: string };
+            const i = index - 1;
+            if (working[i]) working[i] = { ...working[i], status: "failed", error };
+            setPanels([...working]);
+            updatePanels(projectId, [...working]);
+          } else if (ev === "error") {
+            const { message } = data as { message: string };
+            setError(message);
+            setPhase("error");
+          }
+        } catch {
+          /* malformed event */
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf("\n\n")) >= 0) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          event = "";
+          dataLines = [];
+          for (const line of chunk.split("\n")) {
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+          }
+          if (event) handle(event, dataLines.join("\n"));
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setPhase("error");
       started.current = false;
-      return;
     }
-
-    const initial: PanelState[] = beats.map((b) => ({
-      index: b.index,
-      status: "pending",
-      beat: b,
-    }));
-    setPanels(initial);
-    updatePanels(projectId, initial);
-
-    setPhase("rendering");
-
-    const CONCURRENCY = 4;
-    let next = 0;
-    const queue = [...initial];
-    const results: PanelState[] = initial.slice();
-
-    async function worker() {
-      while (true) {
-        const i = next++;
-        if (i >= queue.length) return;
-        const panel = queue[i];
-        results[i] = { ...panel, status: "rendering" };
-        setPanels([...results]);
-        try {
-          const res = await fetch("/api/render", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              falKey: key,
-              prompt: panel.beat?.prompt,
-              imageUrls: panel.beat?.imageRefs ?? [],
-              aspect: safeBrief.aspect,
-              quality: "high",
-            }),
-          });
-          const json = await res.json();
-          if (!res.ok) throw new Error(json.error ?? "Render failed");
-          results[i] = { ...panel, status: "done", imageUrl: json.url };
-        } catch (err) {
-          results[i] = {
-            ...panel,
-            status: "failed",
-            error: err instanceof Error ? err.message : String(err),
-          };
-        }
-        setPanels([...results]);
-        updatePanels(projectId, [...results]);
-      }
-    }
-
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
-    setPhase("done");
   }, [project, brief, key, projectId, updatePanels, style?.reference, sheetUrls]);
 
   useEffect(() => {

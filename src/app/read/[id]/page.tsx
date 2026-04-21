@@ -2,10 +2,22 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileArchive,
+  FileText,
+  Loader2,
+} from "lucide-react";
 import { Shell } from "@/components/Shell";
+import { SpeechBubbleStack } from "@/components/Reader/SpeechBubble";
+import { exportCbz, exportPdf } from "@/lib/export";
 import { useStudio } from "@/lib/state";
-import type { PanelState } from "@/lib/types";
+import type { ComicProject, PanelState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function ReadPage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,21 +66,27 @@ function Reader({ projectId }: { projectId: string }) {
     );
   }
 
-  if (brief.format === "webtoon") return <WebtoonReader panels={panels} />;
-  return <FlipbookReader panels={panels} rtl={brief.format === "manga"} />;
+  if (brief.format === "webtoon") return <WebtoonReader project={project} panels={panels} />;
+  return <FlipbookReader project={project} panels={panels} rtl={brief.format === "manga"} />;
 }
 
-function WebtoonReader({ panels }: { panels: (PanelState & { imageUrl: string })[] }) {
+function WebtoonReader({ project, panels }: { project: ComicProject; panels: (PanelState & { imageUrl: string })[] }) {
   return (
     <div className="mt-6">
-      <TopBar panelCount={panels.length} />
-      <div className="mx-auto mt-6 flex max-w-[720px] flex-col gap-1.5">
+      <TopBar panelCount={panels.length} project={project} />
+      <div className="mx-auto mt-6 flex max-w-[720px] flex-col gap-2">
         {panels.map((p) => (
-          <div key={p.index} className="overflow-hidden rounded-lg border border-subtle bg-black">
+          <div key={p.index} className="relative overflow-hidden rounded-lg border border-subtle bg-black">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.imageUrl} alt={`Panel ${p.index}`} className="block h-auto w-full" />
             {p.beat?.dialog && p.beat.dialog.length > 0 && (
-              <DialogStrip dialog={p.beat.dialog} />
+              <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
+                <SpeechBubbleStack
+                  dialog={p.beat.dialog}
+                  side={panelSideForIndex(p.index)}
+                  width={280}
+                />
+              </div>
             )}
           </div>
         ))}
@@ -77,10 +95,16 @@ function WebtoonReader({ panels }: { panels: (PanelState & { imageUrl: string })
   );
 }
 
+function panelSideForIndex(i: number): "left" | "right" | "center" {
+  return i % 2 === 0 ? "right" : "left";
+}
+
 function FlipbookReader({
+  project,
   panels,
   rtl,
 }: {
+  project: ComicProject;
   panels: (PanelState & { imageUrl: string })[];
   rtl: boolean;
 }) {
@@ -116,7 +140,7 @@ function FlipbookReader({
 
   return (
     <div className="mt-6">
-      <TopBar panelCount={panels.length} />
+      <TopBar panelCount={panels.length} project={project} />
       <div className="relative mt-6 flex items-center justify-center gap-4">
         <button
           type="button"
@@ -132,8 +156,8 @@ function FlipbookReader({
           className="ink-border grid aspect-[3/2] w-full max-w-[1100px] grid-cols-2 overflow-hidden rounded-2xl bg-[oklch(0.07_0_0)]"
           style={{ boxShadow: "inset 0 0 0 1.5px oklch(0 0 0 / 0.55), 0 30px 80px -20px oklch(0 0 0 / 0.75)" }}
         >
-          <PageSide panel={left} side="left" />
-          <PageSide panel={right} side="right" />
+          <PageSide panel={left} side="left" rtl={rtl} />
+          <PageSide panel={right} side="right" rtl={rtl} />
         </div>
 
         <button
@@ -159,9 +183,11 @@ function FlipbookReader({
 function PageSide({
   panel,
   side,
+  rtl,
 }: {
   panel: (PanelState & { imageUrl: string }) | null;
   side: "left" | "right";
+  rtl?: boolean;
 }) {
   if (!panel) {
     return (
@@ -177,6 +203,7 @@ function PageSide({
       </div>
     );
   }
+  const bubbleSide = side === "left" ? "left" : "right";
   return (
     <div
       className={cn(
@@ -187,8 +214,18 @@ function PageSide({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={panel.imageUrl} alt={`Panel ${panel.index}`} className="max-h-full max-w-full object-contain" />
       {panel.beat?.dialog && panel.beat.dialog.length > 0 && (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3">
-          <DialogStrip dialog={panel.beat.dialog} compact />
+        <div
+          className={cn(
+            "pointer-events-none absolute bottom-4",
+            bubbleSide === "left" ? "left-4" : "right-4",
+          )}
+        >
+          <SpeechBubbleStack
+            dialog={panel.beat.dialog}
+            side={bubbleSide}
+            width={240}
+            rtl={rtl}
+          />
         </div>
       )}
       <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
@@ -198,32 +235,23 @@ function PageSide({
   );
 }
 
-function DialogStrip({
-  dialog,
-  compact,
-}: {
-  dialog: { speaker?: string; text: string }[];
-  compact?: boolean;
-}) {
-  return (
-    <div className={cn("flex flex-col gap-1", compact ? "" : "px-4 py-3")}>
-      {dialog.map((d, i) => (
-        <div
-          key={i}
-          className={cn(
-            "rounded-xl border border-black/80 bg-white px-3 py-2 font-[family-name:var(--font-display)] text-[13px] tracking-wide text-black shadow-[2px_2px_0_oklch(0_0_0)]",
-            compact ? "text-[11.5px]" : "",
-          )}
-        >
-          {d.speaker ? <span className="mr-1 text-black/60">{d.speaker}:</span> : null}
-          {d.text}
-        </div>
-      ))}
-    </div>
-  );
-}
+function TopBar({ panelCount, project }: { panelCount: number; project: ComicProject }) {
+  const [busy, setBusy] = useState<null | "pdf" | "cbz">(null);
+  const [err, setErr] = useState<string | null>(null);
 
-function TopBar({ panelCount }: { panelCount: number }) {
+  async function download(kind: "pdf" | "cbz") {
+    setBusy(kind);
+    setErr(null);
+    try {
+      if (kind === "pdf") await exportPdf(project);
+      else await exportCbz(project);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
@@ -231,6 +259,24 @@ function TopBar({ panelCount }: { panelCount: number }) {
         Reader · {panelCount} panels
       </div>
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => download("pdf")}
+          disabled={!!busy}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] disabled:opacity-50"
+        >
+          {busy === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+          PDF
+        </button>
+        <button
+          type="button"
+          onClick={() => download("cbz")}
+          disabled={!!busy}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] disabled:opacity-50"
+        >
+          {busy === "cbz" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileArchive className="h-3.5 w-3.5" />}
+          CBZ
+        </button>
         <Link
           href="/library"
           className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px]"
@@ -246,6 +292,11 @@ function TopBar({ panelCount }: { panelCount: number }) {
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
+      {err && (
+        <div className="w-full rounded-lg border border-red-500/30 bg-red-500/[0.06] px-3 py-2 text-[11.5px] text-red-200">
+          Download failed: {err}
+        </div>
+      )}
     </div>
   );
 }

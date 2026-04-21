@@ -1,17 +1,18 @@
 # Comic Studio
 
-Comic Studio is a local-first Next.js app for generating short comics with fal.ai. Choose a style, define up to four characters, write a brief, and the app creates a storyboard, renders the panels, and opens the result in a reader.
+Comic Studio is a Next.js app for creating detailed comic books and manga with `gpt-image-2` through the fal API. Bring your own fal key, choose a style, define characters, write a story brief, and the app turns it into a multi-panel comic you can read in the browser.
 
-## What it does
+## Features
 
-- Style presets for a consistent visual direction
-- One to four characters, with optional photo-based reference sheets
-- Storyboard generation through fal OpenRouter
-- Panel rendering with `openai/gpt-image-2` and `openai/gpt-image-2/edit`
-- Reader modes for comic, manga, and webtoon
-- Project state and fal key stored in browser `localStorage`
+- Create comics or manga from a single brief
+- Use up to four characters with optional photo references
+- Keep visual consistency with style presets and character sheets
+- Generate storyboards through fal OpenRouter
+- Render panels with `openai/gpt-image-2` and `openai/gpt-image-2/edit`
+- Read the result in comic, manga, or webtoon mode
+- Keep project state and fal key in browser `localStorage`
 
-## Run locally
+## Quick start
 
 ```bash
 pnpm install
@@ -21,7 +22,7 @@ pnpm dev
 
 Open `http://localhost:3000`, save your fal API key in `/settings`, and start a comic.
 
-## Configuration
+## Optional configuration
 
 `.env.example`
 
