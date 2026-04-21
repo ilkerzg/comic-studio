@@ -278,11 +278,11 @@ function TopBar({ panelCount, project }: { panelCount: number; project: ComicPro
           CBZ
         </button>
         <Link
-          href="/library"
+          href="/history"
           className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Library
+          History
         </Link>
         <Link
           href="/new"

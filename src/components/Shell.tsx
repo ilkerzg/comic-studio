@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { BookOpen, Key, Sparkles } from "lucide-react";
+import { BookOpen, History, Key, Sparkles } from "lucide-react";
 
 export function Shell({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -34,6 +34,13 @@ export function Shell({ children, className }: { children: React.ReactNode; clas
             >
               <BookOpen className="h-3.5 w-3.5" />
               Library
+            </Link>
+            <Link
+              href="/history"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium text-foreground/60 hover:text-foreground"
+            >
+              <History className="h-3.5 w-3.5" />
+              History
             </Link>
             <Link
               href="/settings"
