@@ -46,19 +46,19 @@ export const STYLES: StyleEntry[] = [
   },
   {
     id: "moebius",
-    name: "Moebius Sci-Fi",
+    name: "Classic Euro Sci-Fi",
     tagline: "Hairline ink, washed color, vast scale.",
     promptStub:
-      "Moebius-inspired science fiction comic, hairline ink, washed-out pastel color, vast alien vistas, meticulous mechanical detail, dreamlike scale, muted palette.",
+      "Classic European science fiction comic, hairline ink, washed-out pastel color, vast alien vistas, meticulous mechanical detail, dreamlike scale, muted palette.",
     palette: "color",
     reference: "/styles/moebius.png",
   },
   {
     id: "western-superhero",
-    name: "Western Superhero",
+    name: "Western Action Comic",
     tagline: "Bold ink, saturated color, action pages.",
     promptStub:
-      "Modern Western superhero comic, bold ink, heavy black shadows, saturated primary colors, dynamic action poses, kinetic panel composition, glossy finish.",
+      "Modern Western action comic style, bold ink outlines, heavy black shadows, saturated primary colors, dynamic poses, kinetic panel composition, glossy finish.",
     palette: "color",
     reference: "/styles/western-superhero.png",
   },
@@ -73,10 +73,10 @@ export const STYLES: StyleEntry[] = [
   },
   {
     id: "ghibli",
-    name: "Ghibli-ish",
+    name: "Hand-Painted Anime",
     tagline: "Hand-painted warmth, soft light.",
     promptStub:
-      "Ghibli-inspired illustration, hand-painted warmth, soft diffuse light, lush natural backgrounds, gentle color palette, watercolor texture, serene mood.",
+      "Hand-painted anime illustration, soft diffuse light, lush natural backgrounds, gentle color palette, watercolor texture, serene pastoral mood.",
     palette: "color",
     reference: "/styles/ghibli.png",
   },
