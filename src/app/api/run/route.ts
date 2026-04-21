@@ -94,8 +94,13 @@ export async function POST(req: Request) {
 
         const call = completion.choices[0]?.message.tool_calls?.[0];
         if (!call || call.type !== "function") throw new Error("Model did not return a storyboard");
-        const parsed = JSON.parse(call.function.arguments) as { panels: StoryboardPanel[] };
-        const panels = (parsed.panels ?? []).slice(0, brief.panelCount).map((p, i) => ({
+        const raw = JSON.parse(call.function.arguments) as { panels: StoryboardPanel[] | string };
+        const panelArr: StoryboardPanel[] = Array.isArray(raw.panels)
+          ? raw.panels
+          : typeof raw.panels === "string"
+            ? (JSON.parse(raw.panels) as StoryboardPanel[])
+            : [];
+        const panels = panelArr.slice(0, brief.panelCount).map((p, i) => ({
           index: i + 1,
           title: String(p.title ?? ""),
           composition: String(p.composition ?? ""),

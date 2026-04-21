@@ -2,6 +2,8 @@
 
 Comic Studio is a Next.js app for creating detailed comic books and manga with `gpt-image-2` through the fal API. Bring your own fal key, choose a style, define characters, write a story brief, and the app turns it into a multi-panel comic you can read in the browser.
 
+**Live demo:** [comic-studio-one.vercel.app](https://comic-studio-one.vercel.app) · grab a fal key from [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys).
+
 ## Features
 
 - Create comics or manga from a single brief
