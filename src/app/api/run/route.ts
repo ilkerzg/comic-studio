@@ -4,7 +4,7 @@ import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import type { Brief } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 type StoryboardPanel = {
   title: string;
