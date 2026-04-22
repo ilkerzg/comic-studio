@@ -101,40 +101,30 @@ function StudioView({ projectId }: { projectId: string }) {
       updatePanels(projectId, [...working]);
       setPhase("rendering");
 
-      const CONCURRENCY = 4;
-      let cursor = 0;
-      async function worker() {
-        while (true) {
-          const i = cursor++;
-          if (i >= working.length) return;
-          const panel = working[i];
-          if (!panel?.beat?.prompt) continue;
-          working[i] = { ...panel, status: "rendering" };
-          setPanels([...working]);
-          try {
-            const out = await renderPanel({
-              falKey: key,
-              prompt: panel.beat.prompt,
-              imageUrls: refs,
-              refLabels,
-              aspect: safeBrief.aspect,
-            });
-            working[i] = { ...working[i], status: "done", imageUrl: out.url };
-          } catch (err) {
-            working[i] = {
-              ...working[i],
-              status: "failed",
-              error: err instanceof Error ? err.message : String(err),
-            };
-          }
-          setPanels([...working]);
-          updatePanels(projectId, [...working]);
+      for (let i = 0; i < working.length; i++) {
+        const panel = working[i];
+        if (!panel?.beat?.prompt) continue;
+        working[i] = { ...panel, status: "rendering" };
+        setPanels([...working]);
+        try {
+          const out = await renderPanel({
+            falKey: key,
+            prompt: panel.beat.prompt,
+            imageUrls: refs,
+            refLabels,
+            aspect: safeBrief.aspect,
+          });
+          working[i] = { ...working[i], status: "done", imageUrl: out.url };
+        } catch (err) {
+          working[i] = {
+            ...working[i],
+            status: "failed",
+            error: err instanceof Error ? err.message : String(err),
+          };
         }
+        setPanels([...working]);
+        updatePanels(projectId, [...working]);
       }
-
-      await Promise.all(
-        Array.from({ length: Math.min(CONCURRENCY, working.length) }, () => worker()),
-      );
       setPhase("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

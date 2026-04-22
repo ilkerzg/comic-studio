@@ -13,6 +13,8 @@ import {
   FileArchive,
   FileText,
   Loader2,
+  Maximize2,
+  X,
 } from "lucide-react";
 import { Shell } from "@/components/Shell";
 import { exportCbz, exportPdf } from "@/lib/export";
@@ -93,59 +95,40 @@ function Reader({ projectId }: { projectId: string }) {
   return <FlipbookReader project={project} panels={panels} />;
 }
 
-const LENS_SIZE = 220;
-const LENS_ZOOM = 2.4;
-
-const BookPage = forwardRef<HTMLDivElement, { panel: ReadyPanel }>(function BookPage(
-  { panel },
-  ref,
-) {
-  const [lens, setLens] = useState<{ x: number; y: number; w: number; h: number } | null>(
-    null,
-  );
-
-  function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setLens({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-      w: rect.width,
-      h: rect.height,
-    });
-  }
-
-  return (
-    <div
-      ref={ref}
-      className="group relative h-full w-full overflow-hidden bg-black"
-      onMouseMove={onMouseMove}
-      onMouseLeave={() => setLens(null)}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={panel.imageUrl}
-        alt={`Page ${panel.index}`}
-        className="h-full w-full object-contain"
-        draggable={false}
-      />
-      {lens && (
-        <div
-          className="pointer-events-none absolute rounded-full border border-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.55)] ring-1 ring-black/30"
-          style={{
-            left: lens.x - LENS_SIZE / 2,
-            top: lens.y - LENS_SIZE / 2,
-            width: LENS_SIZE,
-            height: LENS_SIZE,
-            backgroundImage: `url(${panel.imageUrl})`,
-            backgroundRepeat: "no-repeat",
-            backgroundSize: `${lens.w * LENS_ZOOM}px ${lens.h * LENS_ZOOM}px`,
-            backgroundPosition: `${-(lens.x * LENS_ZOOM - LENS_SIZE / 2)}px ${-(lens.y * LENS_ZOOM - LENS_SIZE / 2)}px`,
-          }}
+const BookPage = forwardRef<HTMLDivElement, { panel: ReadyPanel; onExpand: () => void }>(
+  function BookPage({ panel, onExpand }, ref) {
+    return (
+      <div
+        ref={ref}
+        role="button"
+        tabIndex={0}
+        onClick={onExpand}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onExpand();
+          }
+        }}
+        aria-label={`Open page ${panel.index} full-screen`}
+        className="group relative h-full w-full cursor-zoom-in overflow-hidden bg-black"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={panel.imageUrl}
+          alt={`Page ${panel.index}`}
+          className="h-full w-full object-contain"
+          draggable={false}
         />
-      )}
-    </div>
-  );
-});
+        <div
+          className="pointer-events-none absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white/85 opacity-80 backdrop-blur transition group-hover:opacity-100"
+          aria-hidden
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </div>
+      </div>
+    );
+  },
+);
 
 type FlipBookHandle = {
   pageFlip: () => {
@@ -164,6 +147,7 @@ function FlipbookReader({
 }) {
   const bookRef = useRef<FlipBookHandle | null>(null);
   const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState<number | null>(null);
   const total = panels.length;
 
   const aspectRatio =
@@ -186,12 +170,26 @@ function FlipbookReader({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && expanded !== null) {
+        setExpanded(null);
+        return;
+      }
+      if (expanded !== null) return;
       if (e.key === "ArrowRight") flipNext();
       if (e.key === "ArrowLeft") flipPrev();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [flipNext, flipPrev]);
+  }, [flipNext, flipPrev, expanded]);
+
+  useEffect(() => {
+    if (expanded === null) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
 
   return (
     <div className="mt-4 sm:mt-6">
@@ -229,14 +227,14 @@ function FlipbookReader({
             useMouseEvents
             swipeDistance={30}
             showPageCorners
-            disableFlipByClick={false}
+            disableFlipByClick
             startPage={0}
             className="mx-auto"
             style={{}}
             onFlip={(e: { data: number }) => setPage(e.data)}
           >
-            {panels.map((p) => (
-              <BookPage key={p.index} panel={p} />
+            {panels.map((p, i) => (
+              <BookPage key={p.index} panel={p} onExpand={() => setExpanded(i)} />
             ))}
           </HTMLFlipBook>
         </div>
@@ -284,8 +282,19 @@ function FlipbookReader({
           Page {page + 1} / {total}
         </span>
         <span>·</span>
-        <span>Use ← and → or drag the page corner to turn</span>
+        <span>Tap a page to open it full-screen · ← and → to turn</span>
       </div>
+
+      {expanded !== null && panels[expanded] && (
+        <PageLightbox
+          panel={panels[expanded]}
+          onClose={() => setExpanded(null)}
+          onPrev={expanded > 0 ? () => setExpanded(expanded - 1) : undefined}
+          onNext={expanded < panels.length - 1 ? () => setExpanded(expanded + 1) : undefined}
+          index={expanded + 1}
+          total={panels.length}
+        />
+      )}
 
       {/* Spacer so flipbook doesn't sit under the mobile bottom bar */}
       <div className="h-16 sm:hidden" aria-hidden />
@@ -361,6 +370,88 @@ function TopBar({ panelCount, project }: { panelCount: number; project: ComicPro
           Download failed: {err}
         </div>
       )}
+    </div>
+  );
+}
+
+function PageLightbox({
+  panel,
+  onClose,
+  onPrev,
+  onNext,
+  index,
+  total,
+}: {
+  panel: ReadyPanel;
+  onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  index: number;
+  total: number;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowRight" && onNext) onNext();
+      if (e.key === "ArrowLeft" && onPrev) onPrev();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onPrev, onNext]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Page ${index} of ${total}`}
+      className="fixed inset-0 z-[80] flex flex-col bg-black/95 backdrop-blur"
+      style={{ paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)" }}
+      onClick={onClose}
+    >
+      <div className="flex items-center justify-between px-4 py-3 text-[12px] text-white/75" onClick={(e) => e.stopPropagation()}>
+        <span className="font-mono">{index} / {total}</span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/85 active:bg-white/10"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="relative flex-1 overflow-auto native-scroll" onClick={(e) => e.stopPropagation()}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={panel.imageUrl}
+          alt={`Page ${index}`}
+          className="mx-auto h-full max-h-full w-auto max-w-full object-contain"
+          draggable={false}
+          onClick={onClose}
+        />
+      </div>
+      <div
+        className="flex items-center justify-between gap-2 px-4 py-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={!onPrev}
+          aria-label="Previous page"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/85 disabled:opacity-30"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <span className="text-[12px] text-white/60">Tap image or press Esc to close</span>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!onNext}
+          aria-label="Next page"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/85 disabled:opacity-30"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 }
