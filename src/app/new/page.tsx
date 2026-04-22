@@ -66,6 +66,7 @@ function Wizard() {
       createdAt: Date.now(),
       brief,
       status: "draft" as const,
+      autoStart: true,
       panels: Array.from({ length: brief.panelCount }, (_, i) => ({
         index: i + 1,
         status: "pending" as const,
@@ -420,7 +421,7 @@ function StoryStep() {
         STORY & OUTPUT COUNT
       </h2>
       <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">
-        Write your story prompt. Then choose how many panels to generate.
+        Write your story prompt. Then choose how many full comic pages to generate. Each page will be a real multi-panel layout with speech bubbles and SFX baked into the art.
       </p>
 
       <div className="mt-5 flex flex-col gap-3">
@@ -438,7 +439,7 @@ function StoryStep() {
         <div className="mt-2">
           <div className="flex items-center justify-between">
             <label htmlFor="panel-count" className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">
-              Number of outputs (panels)
+              Number of pages
             </label>
             <div className="text-[13px] font-medium">
               {brief.panelCount} <span className="text-foreground/50">(max 50)</span>
@@ -455,7 +456,7 @@ function StoryStep() {
             className="mt-3 w-full accent-[oklch(0.75_0.2_35)]"
           />
           <div className="mt-2 text-[11.5px] text-foreground/55">
-            Every panel is rendered with <code className="rounded bg-white/[0.06] px-1 py-0.5 font-mono">openai/gpt-image-2/edit</code> using style + character references.
+            Every page is rendered as a single image with <code className="rounded bg-white/[0.06] px-1 py-0.5 font-mono">openai/gpt-image-2/edit</code>, combining multiple panels, speech bubbles, and SFX using the style and character references.
           </div>
         </div>
       </div>

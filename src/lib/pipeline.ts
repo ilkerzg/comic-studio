@@ -128,34 +128,50 @@ const storyboardTools = [
     type: "function" as const,
     function: {
       name: "create_storyboard",
-      description: "Return the full panel list.",
+      description: "Return the full page list. Each entry is one full comic page with multiple sub-panels.",
       parameters: {
         type: "object",
         properties: {
-          panels: {
+          pages: {
             type: "array",
             items: {
               type: "object",
               properties: {
                 title: { type: "string" },
-                composition: { type: "string" },
-                beat: { type: "string" },
-                characters: { type: "array", items: { type: "string" } },
-                dialog: {
+                layout: { type: "string" },
+                subPanels: {
                   type: "array",
+                  minItems: 3,
+                  maxItems: 6,
                   items: {
                     type: "object",
-                    properties: { speaker: { type: "string" }, text: { type: "string" } },
-                    required: ["text"],
+                    properties: {
+                      position: { type: "string" },
+                      composition: { type: "string" },
+                      action: { type: "string" },
+                      dialog: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            speaker: { type: "string" },
+                            text: { type: "string" },
+                          },
+                          required: ["text"],
+                        },
+                      },
+                      sfx: { type: "string" },
+                    },
+                    required: ["position", "composition", "action", "dialog"],
                   },
                 },
                 prompt: { type: "string" },
               },
-              required: ["title", "composition", "beat", "characters", "dialog", "prompt"],
+              required: ["title", "layout", "subPanels", "prompt"],
             },
           },
         },
-        required: ["panels"],
+        required: ["pages"],
       },
     },
   },
@@ -167,62 +183,14 @@ function sizeFor(aspect: Brief["aspect"]) {
   return "portrait_16_9";
 }
 
-function ensureImageMarkers(panel: StoryboardPanel, brief: Brief) {
-  const markerPattern = /#image\d+/i;
+function ensureStyleMarker(rawPrompt: string): string {
+  const styleLine = "style reference: #image1";
   const styleLinePattern = /^\s*style reference:\s*#image1\s*$/i;
-  const base = panel.prompt?.trim() ?? "";
-  const fallbackLines: string[] = [];
-  const lines = panel.prompt?.split(/\r?\n/) ?? [];
-
-  const characterIndexByName = new Map(
-    brief.characters
-      .map((c, i) => [c.name.toLowerCase(), i + 2] as const)
-      .filter(([name]) => name.length > 0),
-  );
-
-  if (!markerPattern.test(base)) {
-    for (const charName of panel.characters) {
-      const idx = characterIndexByName.get(charName.toLowerCase()) ?? (2 + fallbackLines.length);
-      const cue =
-        panel.dialog?.find((d) => (d.speaker ?? "").toLowerCase().trim() === charName.toLowerCase())?.text ??
-        "is in this scene";
-      fallbackLines.push(`#image${idx} ${charName} is saying ${cue ? `"${cue}"` : "and acting"}.`);
-    }
-  } else {
-    const missingCharacters = panel.characters.filter((name) => {
-      const safe = name.trim().toLowerCase();
-      if (!safe) return false;
-      return !lines.some((line) =>
-        new RegExp(`^\\s*#image\\d+\\s+${safe.replace(/[.*+?^${}()|[\]\\]/g, "\\\\$&")}\\b`, "i").test(
-          line.trim(),
-        ),
-      );
-    });
-    for (const charName of missingCharacters) {
-      const idx = characterIndexByName.get(charName.toLowerCase()) ?? (2 + fallbackLines.length);
-      const cue =
-        panel.dialog?.find((d) => (d.speaker ?? "").toLowerCase().trim() === charName.toLowerCase())?.text ??
-        "is in this scene";
-      fallbackLines.push(`#image${idx} ${charName} is saying ${cue ? `"${cue}"` : "and acting"}.`);
-    }
-  }
-
-  const styleLineExists = lines.some((line) => styleLinePattern.test(line));
-  if (!styleLineExists) {
-    fallbackLines.push("style reference: #image1");
-  }
-
-  if (fallbackLines.length === 0) {
-    const trimmedLines = lines.map((line) => line.trim());
-    const withoutExistingStyleLine = lines.filter((line) => !styleLinePattern.test(line));
-    const styleLineIsLast =
-      trimmedLines.length > 0 && styleLinePattern.test(trimmedLines[trimmedLines.length - 1]);
-    if (styleLineIsLast) return base;
-    return `${withoutExistingStyleLine.join("\n")}\nstyle reference: #image1`;
-  }
-  const out = [...lines, ...fallbackLines].filter((line) => line.trim().length > 0);
-  const withoutExistingStyleLine = out.filter((line) => !styleLinePattern.test(line));
-  return `${withoutExistingStyleLine.join("\n")}\nstyle reference: #image1`;
+  const prompt = (rawPrompt ?? "").trim();
+  if (!prompt) return styleLine;
+  const lines = prompt.split(/\r?\n/);
+  const withoutStyle = lines.filter((line) => !styleLinePattern.test(line));
+  return `${withoutStyle.join("\n").trimEnd()}\n\n${styleLine}`;
 }
 
 export function buildPortraitPrompt({
@@ -307,7 +275,7 @@ export async function generateStoryboard(brief: Brief, falKey: string): Promise<
     model: defaultModel(),
     messages: [
       { role: "system", content: buildSystemPrompt(brief) },
-      { role: "user", content: `Generate the storyboard now. Panel count: ${brief.panelCount}.` },
+      { role: "user", content: `Generate the storyboard now. Page count: ${brief.panelCount}. Each page must be a full comic page with 3 to 6 sub-panels arranged in a grid.` },
     ],
     tools: storyboardTools,
     tool_choice: { type: "function", function: { name: "create_storyboard" } },
@@ -316,15 +284,15 @@ export async function generateStoryboard(brief: Brief, falKey: string): Promise<
   if (!call || call.type !== "function" || !call.function?.arguments) {
     throw new Error("Model did not return a storyboard");
   }
-  const raw = JSON.parse(call.function.arguments) as { panels: StoryboardPanel[] | string };
-  const arr: StoryboardPanel[] = Array.isArray(raw.panels)
-    ? raw.panels
-    : typeof raw.panels === "string"
-      ? (JSON.parse(raw.panels) as StoryboardPanel[])
+  const raw = JSON.parse(call.function.arguments) as { pages: StoryboardPanel[] | string };
+  const arr: StoryboardPanel[] = Array.isArray(raw.pages)
+    ? raw.pages
+    : typeof raw.pages === "string"
+      ? (JSON.parse(raw.pages) as StoryboardPanel[])
       : [];
-  const prepared = arr.map((panel) => ({
-    ...panel,
-    prompt: ensureImageMarkers(panel, brief),
+  const prepared = arr.map((page) => ({
+    ...page,
+    prompt: ensureStyleMarker(page.prompt || ""),
   }));
   return prepared.slice(0, brief.panelCount);
 }

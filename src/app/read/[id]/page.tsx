@@ -15,7 +15,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { Shell } from "@/components/Shell";
-import { SpeechBubbleStack } from "@/components/Reader/SpeechBubble";
 import { exportCbz, exportPdf } from "@/lib/export";
 import { useStudio } from "@/lib/state";
 import type { ComicProject, PanelState } from "@/lib/types";
@@ -91,25 +90,12 @@ function WebtoonReader({ project, panels }: { project: ComicProject; panels: (Pa
         {panels.map((p) => (
           <div key={p.index} className="relative overflow-hidden rounded-lg border border-subtle bg-black">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.imageUrl} alt={`Panel ${p.index}`} className="block h-auto w-full" />
-            {p.beat?.dialog && p.beat.dialog.length > 0 && (
-              <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
-                <SpeechBubbleStack
-                  dialog={p.beat.dialog}
-                  side={panelSideForIndex(p.index)}
-                  width={280}
-                />
-              </div>
-            )}
+            <img src={p.imageUrl} alt={`Page ${p.index}`} className="block h-auto w-full" />
           </div>
         ))}
       </div>
     </div>
   );
-}
-
-function panelSideForIndex(i: number): "left" | "right" | "center" {
-  return i % 2 === 0 ? "right" : "left";
 }
 
 function FlipbookReader({
@@ -169,8 +155,8 @@ function FlipbookReader({
           className="ink-border grid aspect-[3/2] w-full max-w-[1100px] grid-cols-2 overflow-hidden rounded-2xl bg-[oklch(0.07_0_0)]"
           style={{ boxShadow: "inset 0 0 0 1.5px oklch(0 0 0 / 0.55), 0 30px 80px -20px oklch(0 0 0 / 0.75)" }}
         >
-          <PageSide panel={left} side="left" rtl={rtl} />
-          <PageSide panel={right} side="right" rtl={rtl} />
+          <PageSide panel={left} side="left" />
+          <PageSide panel={right} side="right" />
         </div>
 
         <button
@@ -196,11 +182,9 @@ function FlipbookReader({
 function PageSide({
   panel,
   side,
-  rtl,
 }: {
   panel: (PanelState & { imageUrl: string }) | null;
   side: "left" | "right";
-  rtl?: boolean;
 }) {
   if (!panel) {
     return (
@@ -216,7 +200,6 @@ function PageSide({
       </div>
     );
   }
-  const bubbleSide = side === "left" ? "left" : "right";
   return (
     <div
       className={cn(
@@ -225,22 +208,7 @@ function PageSide({
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={panel.imageUrl} alt={`Panel ${panel.index}`} className="max-h-full max-w-full object-contain" />
-      {panel.beat?.dialog && panel.beat.dialog.length > 0 && (
-        <div
-          className={cn(
-            "pointer-events-none absolute bottom-4",
-            bubbleSide === "left" ? "left-4" : "right-4",
-          )}
-        >
-          <SpeechBubbleStack
-            dialog={panel.beat.dialog}
-            side={bubbleSide}
-            width={240}
-            rtl={rtl}
-          />
-        </div>
-      )}
+      <img src={panel.imageUrl} alt={`Page ${panel.index}`} className="max-h-full max-w-full object-contain" />
       <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
         #{String(panel.index).padStart(2, "0")}
       </div>
@@ -269,7 +237,7 @@ function TopBar({ panelCount, project }: { panelCount: number; project: ComicPro
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
         <BookOpen className="h-3.5 w-3.5" />
-        Reader · {panelCount} panels
+        Reader · {panelCount} pages
       </div>
       <div className="flex items-center gap-2">
         <button

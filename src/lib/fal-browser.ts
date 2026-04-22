@@ -31,11 +31,17 @@ export async function uploadToFalStorage(key: string, file: File): Promise<strin
   return await fal.storage.upload(file);
 }
 
+export type StoryboardSubPanel = {
+  position: string;
+  composition: string;
+  action: string;
+  dialog: { speaker?: string; text: string }[];
+  sfx?: string;
+};
+
 export type StoryboardPanel = {
   title: string;
-  composition: string;
-  beat: string;
-  characters: string[];
-  dialog: { speaker?: string; text: string }[];
+  layout: string;
+  subPanels: StoryboardSubPanel[];
   prompt: string;
 };

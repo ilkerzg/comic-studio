@@ -21,6 +21,7 @@ type StudioState = {
   reset: () => void;
   registerProject: (project: ComicProject) => void;
   updatePanels: (projectId: string, patch: PanelState[]) => void;
+  consumeAutoStart: (projectId: string) => boolean;
   getProject: (projectId: string) => ComicProject | undefined;
 };
 
@@ -89,6 +90,16 @@ export const useStudio = create<StudioState>()(
             p.id === projectId ? { ...p, panels: patch } : p,
           ),
         })),
+      consumeAutoStart: (projectId) => {
+        const current = get().projects.find((p) => p.id === projectId);
+        if (!current?.autoStart) return false;
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId ? { ...p, autoStart: false } : p,
+          ),
+        }));
+        return true;
+      },
       getProject: (projectId) => get().projects.find((p) => p.id === projectId),
     }),
     { name: "comic-studio-state", version: 1 },

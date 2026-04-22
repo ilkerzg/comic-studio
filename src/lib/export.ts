@@ -21,7 +21,7 @@ function safeName(s: string, fallback: string) {
 
 export async function exportPdf(project: ComicProject) {
   const panels = project.panels.filter((p) => p.imageUrl) as (PanelState & { imageUrl: string })[];
-  if (panels.length === 0) throw new Error("No rendered panels to export");
+  if (panels.length === 0) throw new Error("No rendered pages to export");
 
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -31,7 +31,7 @@ export async function exportPdf(project: ComicProject) {
   cover.drawRectangle({ x: 0, y: 0, width: 1200, height: 1600, color: rgb(0.05, 0.05, 0.06) });
   const title = "Comic Studio";
   cover.drawText(title, { x: 80, y: 1400, size: 72, font, color: rgb(1, 1, 1) });
-  cover.drawText(`${panels.length} panels`, {
+  cover.drawText(`${panels.length} pages`, {
     x: 80,
     y: 1340,
     size: 24,
@@ -73,7 +73,7 @@ export async function exportPdf(project: ComicProject) {
 
 export async function exportCbz(project: ComicProject) {
   const panels = project.panels.filter((p) => p.imageUrl) as (PanelState & { imageUrl: string })[];
-  if (panels.length === 0) throw new Error("No rendered panels to export");
+  if (panels.length === 0) throw new Error("No rendered pages to export");
   const zip = new JSZip();
   const folderName = safeName(project.brief.story.slice(0, 40), `comic-${project.id.slice(-6)}`);
   const folder = zip.folder(folderName)!;
@@ -83,7 +83,7 @@ export async function exportCbz(project: ComicProject) {
   }
   const meta = [
     `Comic Studio export`,
-    `Panels: ${panels.length}`,
+    `Pages: ${panels.length}`,
     `Style: ${project.brief.styleId}`,
     `Format: ${project.brief.format}`,
     `Generated: ${new Date(project.createdAt).toISOString()}`,
