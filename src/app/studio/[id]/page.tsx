@@ -11,7 +11,7 @@ import { generateStoryboard, renderPanel } from "@/lib/pipeline";
 import { useStudio } from "@/lib/state";
 import { STYLES } from "@/lib/styles";
 import type { PanelState } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, toAbsolutePublicUrl } from "@/lib/utils";
 
 export default function StudioPage() {
   const params = useParams<{ id: string }>();
@@ -62,7 +62,13 @@ function StudioView({ projectId }: { projectId: string }) {
     started.current = true;
     setError(null);
 
-    const refs = [style?.reference, ...sheetUrls].filter(Boolean) as string[];
+    const refs = Array.from(
+      new Set(
+        [style?.reference, ...sheetUrls]
+          .map((entry) => toAbsolutePublicUrl(entry))
+          .filter((entry): entry is string => !!entry),
+      ),
+    );
     const working: PanelState[] = Array.from({ length: safeBrief.panelCount }, (_, i) => ({
       index: i + 1,
       status: "pending",
