@@ -25,8 +25,8 @@ export default function SettingsPage() {
 
   return (
     <Shell>
-      <section className="mx-auto mt-10 max-w-3xl">
-        <h1 className="font-[family-name:var(--font-display)] text-[32px] tracking-wider">
+      <section className="mx-auto mt-5 max-w-3xl sm:mt-10">
+        <h1 className="font-[family-name:var(--font-display)] text-[28px] tracking-wider sm:text-[32px]">
           KEY & ACCOUNT
         </h1>
         <p className="mt-2 text-[13.5px] text-foreground/65">
@@ -41,15 +41,15 @@ export default function SettingsPage() {
           </div>
 
           {loaded && hasKey && (
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-subtle bg-white/[0.03] px-4 py-3">
-              <div>
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-subtle bg-white/[0.03] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <div className="text-[12.5px] font-medium">Saved to this browser</div>
-                <div className="mt-0.5 font-mono text-[11.5px] text-foreground/55">{masked}</div>
+                <div className="mt-0.5 truncate font-mono text-[11.5px] text-foreground/55">{masked}</div>
               </div>
               <button
                 type="button"
                 onClick={() => setKey("")}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-subtle bg-transparent px-3 text-[12px] text-foreground/70 hover:border-red-500/40 hover:text-red-300"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-subtle bg-transparent px-3 text-[12px] text-foreground/70 hover:border-red-500/40 hover:text-red-300 sm:h-8"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Remove

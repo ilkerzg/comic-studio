@@ -16,11 +16,54 @@
   --color-ink: oklch(0.06 0 0);
 }
 
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --mobile-nav-h: 64px;
+}
+
 html, body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html {
+  /* Avoid iOS rubber-band for top-level page chrome while allowing inner scrolls */
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  /* Prevent pinch-zoom on chrome while still allowing scroll */
+  touch-action: manipulation;
+}
+
+button, a, [role="button"], label {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* iOS: text inputs below 16px trigger auto-zoom; ensure base inputs are 16px on mobile. */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="url"],
+  input[type="tel"],
+  input:not([type]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 .halftone {
@@ -32,4 +75,42 @@ html, body {
   box-shadow:
     inset 0 0 0 1.5px oklch(0 0 0 / 0.55),
     0 10px 30px -12px oklch(0 0 0 / 0.6);
+}
+
+.safe-top {
+  padding-top: var(--safe-top);
+}
+
+.safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+
+/* For a full-height stage (e.g. the reader) that accounts for mobile nav + safe area */
+.stage-h {
+  min-height: calc(100dvh - var(--safe-top));
+}
+
+/* A reserve gutter below the last bit of content so the bottom mobile nav doesn't cover it */
+.pb-mobile-nav {
+  padding-bottom: calc(var(--mobile-nav-h) + var(--safe-bottom) + 16px);
+}
+
+@media (min-width: 768px) {
+  .pb-mobile-nav {
+    padding-bottom: 80px;
+  }
+}
+
+/* Hide scrollbar on horizontal scroll chips but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Nicer mobile-style momentum scrolling on overflow containers */
+.native-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }

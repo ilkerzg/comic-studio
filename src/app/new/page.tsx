@@ -76,26 +76,28 @@ function Wizard() {
     router.push(`/studio/${projectId}`);
   }
 
+  const currentStepIdx = STEPS.findIndex((s) => s.id === step);
+
   return (
-    <div className="mt-8">
+    <div className="mt-5 sm:mt-8">
       <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
         <span>New comic</span>
         <span>·</span>
         <span>
-          Step {STEPS.findIndex((s) => s.id === step) + 1} of {STEPS.length}
+          Step {currentStepIdx + 1} of {STEPS.length}
         </span>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <div className="no-scrollbar mt-2 flex items-center gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
         {STEPS.map((s, idx) => {
           const current = step === s.id;
-          const done = STEPS.findIndex((x) => x.id === step) > idx;
+          const done = currentStepIdx > idx;
           return (
             <button
               key={s.id}
               type="button"
               onClick={() => setStep(s.id)}
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium transition",
+                "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[12.5px] font-medium transition active:scale-[0.98] sm:h-9 sm:px-3",
                 current
                   ? "border-accent/60 bg-accent/15 text-foreground"
                   : done
@@ -110,13 +112,15 @@ function Wizard() {
         })}
       </div>
 
-      <div className="mt-8 rounded-2xl border border-subtle bg-surface p-5 sm:p-7">
+      <div className="mt-5 rounded-2xl border border-subtle bg-surface p-4 pb-6 sm:mt-8 sm:p-7">
         {step === "style" && <StyleStep />}
         {step === "cast" && <CastStep falKey={key} />}
         {step === "story" && <StoryStep />}
       </div>
+      <div className="h-16 sm:hidden" aria-hidden />
 
-      <div className="mt-5 flex items-center justify-between">
+      {/* Inline spacer for wide screens; sticky footer for mobile */}
+      <div className="mt-5 hidden items-center justify-between sm:flex">
         <button
           type="button"
           onClick={prev}
@@ -148,6 +152,42 @@ function Wizard() {
           </button>
         )}
       </div>
+
+      {/* Sticky mobile action bar */}
+      <div
+        className="fixed inset-x-0 bottom-[calc(var(--mobile-nav-h)+var(--safe-bottom))] z-30 flex items-center gap-2 border-t border-subtle bg-background/90 px-4 py-3 backdrop-blur sm:hidden"
+      >
+        <button
+          type="button"
+          onClick={prev}
+          disabled={step === STEPS[0].id}
+          className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[13px] text-foreground/80 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+        {step === "story" ? (
+          <button
+            type="button"
+            onClick={start}
+            disabled={!canProceed || submitting}
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-5 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink active:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {submitting ? "Starting..." : "Start production"}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={next}
+            disabled={!canProceed}
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground px-5 text-[13px] font-medium text-background active:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -159,7 +199,7 @@ function StyleStep() {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Step 1</div>
-      <h2 className="mt-2 font-[family-name:var(--font-display)] text-[28px] tracking-wider">
+      <h2 className="mt-2 font-[family-name:var(--font-display)] text-[24px] tracking-wider sm:text-[28px]">
         CHOOSE THE STYLE
       </h2>
       <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">
@@ -167,7 +207,7 @@ function StyleStep() {
         only direction for the book.
       </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:grid-cols-4 sm:gap-3">
         {STYLES.map((s) => {
           const selected = brief.styleId === s.id;
           return (
@@ -176,7 +216,7 @@ function StyleStep() {
               type="button"
               onClick={() => setStyle(s.id)}
               className={cn(
-                "group flex flex-col overflow-hidden rounded-xl border text-left transition",
+                "group flex flex-col overflow-hidden rounded-xl border text-left transition active:scale-[0.98]",
                 selected
                   ? "border-accent bg-surface-2 ring-2 ring-accent/40"
                   : "border-subtle bg-surface hover:border-white/20",
@@ -192,11 +232,11 @@ function StyleStep() {
                   }}
                 />
               </div>
-              <div className="border-t border-subtle p-3">
-                <div className="font-[family-name:var(--font-display)] text-[14px] tracking-wider">
+              <div className="border-t border-subtle p-2.5 sm:p-3">
+                <div className="font-[family-name:var(--font-display)] text-[13px] tracking-wider sm:text-[14px]">
                   {s.name.toUpperCase()}
                 </div>
-                <div className="mt-1 text-[11px] leading-snug text-foreground/60">{s.tagline}</div>
+                <div className="mt-1 line-clamp-2 text-[10.5px] leading-snug text-foreground/60 sm:text-[11px]">{s.tagline}</div>
               </div>
             </button>
           );
@@ -214,10 +254,10 @@ function CastStep({ falKey }: { falKey: string }) {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Step 2</div>
-          <h2 className="mt-2 font-[family-name:var(--font-display)] text-[28px] tracking-wider">
+          <h2 className="mt-2 font-[family-name:var(--font-display)] text-[24px] tracking-wider sm:text-[28px]">
             CAST THE STORY
           </h2>
           <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">
@@ -229,7 +269,7 @@ function CastStep({ falKey }: { falKey: string }) {
           <button
             type="button"
             onClick={addCharacter}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface-2 px-3 text-[12.5px] hover:border-white/20"
+            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface-2 px-3 text-[12.5px] hover:border-white/20 sm:h-9 sm:w-auto"
           >
             <Plus className="h-3.5 w-3.5" />
             Add character
@@ -303,32 +343,33 @@ function CharacterCard({
   }
 
   return (
-    <div className="rounded-xl border border-subtle bg-surface-2 p-4">
-      <div className="flex items-start justify-between gap-2">
+    <div className="rounded-xl border border-subtle bg-surface-2 p-3 sm:p-4">
+      <div className="flex items-center gap-2">
         <input
           value={character.name}
           onChange={(e) => onChange({ name: e.target.value })}
           placeholder="Name"
-          className="h-9 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 text-[13px] focus:border-white/[0.25] focus:outline-none"
+          className="h-10 min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 text-[14px] focus:border-white/[0.25] focus:outline-none"
         />
-        <select
-          value={character.role}
-          onChange={(e) => onChange({ role: e.target.value as CharacterDraft["role"] })}
-          className="h-9 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2 text-[12px] focus:border-white/[0.25] focus:outline-none"
-        >
-          <option value="protagonist">Protagonist</option>
-          <option value="antagonist">Antagonist</option>
-          <option value="ally">Ally</option>
-          <option value="side">Side</option>
-        </select>
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-subtle text-foreground/55 hover:border-red-500/40 hover:text-red-300"
+          aria-label="Remove character"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-subtle text-foreground/55 hover:border-red-500/40 hover:text-red-300"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
+      <select
+        value={character.role}
+        onChange={(e) => onChange({ role: e.target.value as CharacterDraft["role"] })}
+        className="mt-2 h-10 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 text-[13px] focus:border-white/[0.25] focus:outline-none"
+      >
+        <option value="protagonist">Protagonist</option>
+        <option value="antagonist">Antagonist</option>
+        <option value="ally">Ally</option>
+        <option value="side">Side</option>
+      </select>
 
       <textarea
         value={character.description}
@@ -383,7 +424,7 @@ function CharacterCard({
       {error && <div className="mt-2 text-[11.5px] text-red-300">{error}</div>}
       {character.sheetError && <div className="mt-2 text-[11.5px] text-red-300">{character.sheetError}</div>}
 
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-[11px] text-foreground/50">
           {character.sheetStatus === "ready"
             ? "Portrait ready"
@@ -400,7 +441,7 @@ function CharacterCard({
             !styleId ||
             character.sheetStatus === "generating"
           }
-          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] font-medium hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12.5px] font-medium hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:text-[12px]"
         >
           {character.sheetStatus === "generating" ? "Generating..." : "Generate portrait"}
         </button>
@@ -417,7 +458,7 @@ function StoryStep() {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Step 3</div>
-      <h2 className="mt-2 font-[family-name:var(--font-display)] text-[28px] tracking-wider">
+      <h2 className="mt-2 font-[family-name:var(--font-display)] text-[24px] tracking-wider sm:text-[28px]">
         STORY & OUTPUT COUNT
       </h2>
       <p className="mt-2 max-w-[560px] text-[13px] text-foreground/60">

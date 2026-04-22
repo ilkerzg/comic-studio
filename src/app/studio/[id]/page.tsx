@@ -171,16 +171,16 @@ function StudioView({ projectId }: { projectId: string }) {
   const total = panels.length || brief.panelCount;
 
   return (
-    <div className="mt-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+    <div className="mt-5 sm:mt-8">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:justify-between">
+        <div className="w-full sm:w-auto">
           <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Studio</div>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-[32px] tracking-wider">
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-[26px] leading-tight tracking-wider sm:text-[32px]">
             {style ? style.name.toUpperCase() : "COMIC"} · {brief.panelCount} PAGES
           </h1>
-          <p className="mt-1 max-w-[620px] text-[13px] text-foreground/60">{brief.story}</p>
+          <p className="mt-1 line-clamp-3 max-w-[620px] text-[13px] text-foreground/60 sm:line-clamp-none">{brief.story}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           {phase === "done" ? (
             <>
               <button
@@ -192,21 +192,21 @@ function StudioView({ projectId }: { projectId: string }) {
                   void run();
                 }}
                 disabled={!key}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[13px] text-foreground/80 hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[13px] text-foreground/80 hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10"
               >
                 <Play className="h-4 w-4" />
                 Re-run
               </button>
               <Link
                 href={`/read/${projectId}`}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink"
+                className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink sm:h-10 sm:flex-initial"
               >
                 <BookOpen className="h-4 w-4" />
                 Open the book
               </Link>
             </>
           ) : phase === "outlining" || phase === "rendering" ? (
-            <div className="inline-flex h-10 items-center gap-2 rounded-full border border-subtle bg-surface px-4 text-[12.5px] text-foreground/75">
+            <div className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-subtle bg-surface px-4 text-[12.5px] text-foreground/75 sm:h-10 sm:w-auto">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               {phase === "outlining" ? "Outlining storyboard..." : `Rendering ${done}/${total}`}
             </div>
@@ -220,7 +220,7 @@ function StudioView({ projectId }: { projectId: string }) {
                 void run();
               }}
               disabled={!key}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-auto"
             >
               {phase === "error" ? (
                 <Play className="h-4 w-4" />

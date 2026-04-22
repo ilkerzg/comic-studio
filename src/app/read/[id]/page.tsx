@@ -194,28 +194,28 @@ function FlipbookReader({
   }, [flipNext, flipPrev]);
 
   return (
-    <div className="mt-6">
+    <div className="mt-4 sm:mt-6">
       <TopBar panelCount={total} project={project} />
-      <div className="relative mt-6 flex items-center justify-center gap-3">
+      <div className="relative mt-4 flex items-center justify-center gap-2 sm:mt-6 sm:gap-3">
         <button
           type="button"
           onClick={flipPrev}
           disabled={page === 0}
           aria-label="Previous page"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
+          className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30 sm:flex"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <div className="flex-1" style={{ maxWidth: "min(96vw, 1400px)" }}>
+        <div className="flex-1" style={{ maxWidth: "min(100vw, 1400px)" }}>
           <HTMLFlipBook
             ref={bookRef}
             width={pageWidth}
             height={pageHeight}
             size="stretch"
-            minWidth={280}
+            minWidth={260}
             maxWidth={900}
-            minHeight={400}
+            minHeight={360}
             maxHeight={1400}
             drawShadow
             flippingTime={700}
@@ -246,19 +246,49 @@ function FlipbookReader({
           onClick={flipNext}
           disabled={page >= total - 1}
           aria-label="Next page"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
+          className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30 sm:flex"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-2 text-[11.5px] text-foreground/55">
+      {/* Mobile bottom controls — stays above the mobile tab bar */}
+      <div
+        className="fixed inset-x-0 bottom-[calc(var(--mobile-nav-h)+var(--safe-bottom))] z-30 flex items-center justify-between gap-2 border-t border-subtle bg-background/90 px-4 py-3 backdrop-blur sm:hidden"
+      >
+        <button
+          type="button"
+          onClick={flipPrev}
+          disabled={page === 0}
+          aria-label="Previous page"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 disabled:opacity-30"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="text-center text-[12px] text-foreground/70">
+          Page <span className="font-medium text-foreground">{page + 1}</span> / {total}
+        </div>
+        <button
+          type="button"
+          onClick={flipNext}
+          disabled={page >= total - 1}
+          aria-label="Next page"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 disabled:opacity-30"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="mt-5 hidden items-center justify-center gap-2 text-[11.5px] text-foreground/55 sm:flex">
         <span>
           Page {page + 1} / {total}
         </span>
         <span>·</span>
         <span>Use ← and → or drag the page corner to turn</span>
       </div>
+
+      {/* Spacer so flipbook doesn't sit under the mobile bottom bar */}
+      <div className="h-16 sm:hidden" aria-hidden />
     </div>
   );
 }
@@ -281,44 +311,50 @@ function TopBar({ panelCount, project }: { panelCount: number; project: ComicPro
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
-        <BookOpen className="h-3.5 w-3.5" />
-        Reader · {panelCount} pages
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => download("pdf")}
-          disabled={!!busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] disabled:opacity-50"
-        >
-          {busy === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
-          PDF
-        </button>
-        <button
-          type="button"
-          onClick={() => download("cbz")}
-          disabled={!!busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] disabled:opacity-50"
-        >
-          {busy === "cbz" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileArchive className="h-3.5 w-3.5" />}
-          CBZ
-        </button>
-        <Link
-          href="/history"
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px]"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          History
-        </Link>
-        <Link
-          href="/new"
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-3 font-[family-name:var(--font-display)] text-[13px] tracking-wider text-accent-ink"
-        >
-          New comic
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
+          <BookOpen className="h-3.5 w-3.5" />
+          Reader · {panelCount} pages
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => download("pdf")}
+            disabled={!!busy}
+            aria-label="Download PDF"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] disabled:opacity-50 sm:h-9"
+          >
+            {busy === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => download("cbz")}
+            disabled={!!busy}
+            aria-label="Download CBZ"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] disabled:opacity-50 sm:h-9"
+          >
+            {busy === "cbz" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileArchive className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">CBZ</span>
+          </button>
+          <Link
+            href="/history"
+            aria-label="History"
+            className="hidden h-9 items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 text-[12px] sm:inline-flex"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            History
+          </Link>
+          <Link
+            href="/new"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-3 font-[family-name:var(--font-display)] text-[13px] tracking-wider text-accent-ink sm:h-9"
+          >
+            <span className="hidden sm:inline">New comic</span>
+            <span className="sm:hidden">New</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
       {err && (
         <div className="w-full rounded-lg border border-red-500/30 bg-red-500/[0.06] px-3 py-2 text-[11.5px] text-red-200">
