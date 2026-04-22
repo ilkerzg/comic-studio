@@ -54,7 +54,6 @@ function StudioView({ projectId }: { projectId: string }) {
 
   const brief = project?.brief;
   const style = brief ? STYLES.find((s) => s.id === brief.styleId) : undefined;
-  const sheetUrls = brief?.characters.map((c) => c.sheetUrl).filter(Boolean) as string[];
 
   useEffect(() => {
     if (!project) return;
@@ -67,7 +66,18 @@ function StudioView({ projectId }: { projectId: string }) {
     started.current = true;
     setError(null);
 
-    const refs = [style?.reference, ...sheetUrls].filter(Boolean) as string[];
+    const charactersWithSheet = safeBrief.characters.filter((c) => !!c.sheetUrl);
+    const refs = [
+      style?.reference,
+      ...charactersWithSheet.map((c) => c.sheetUrl as string),
+    ].filter(Boolean) as string[];
+    const refLabels = [
+      `ART STYLE reference ONLY — match its linework, paneling, color palette, and lettering. DO NOT reuse any character, outfit, or scene from this image. Style: ${style?.name ?? "selected style"}.`,
+      ...charactersWithSheet.map(
+        (c) =>
+          `CHARACTER "${c.name}" (${c.role}) — this image is the canonical identity for ${c.name}. Match face, hair, body, and costume exactly whenever ${c.name} appears in a panel. Never use this character unless the panel explicitly names ${c.name}.`,
+      ),
+    ];
     const working: PanelState[] = Array.from({ length: safeBrief.panelCount }, (_, i) => ({
       index: i + 1,
       status: "pending",
@@ -106,6 +116,7 @@ function StudioView({ projectId }: { projectId: string }) {
               falKey: key,
               prompt: panel.beat.prompt,
               imageUrls: refs,
+              refLabels,
               aspect: safeBrief.aspect,
             });
             working[i] = { ...working[i], status: "done", imageUrl: out.url };
@@ -130,7 +141,7 @@ function StudioView({ projectId }: { projectId: string }) {
       setPhase("error");
       started.current = false;
     }
-  }, [project, brief, key, projectId, updatePanels, style?.reference, sheetUrls]);
+  }, [project, brief, key, projectId, updatePanels, style?.reference, style?.name]);
 
   useEffect(() => {
     if (!project || autoStartChecked.current) return;

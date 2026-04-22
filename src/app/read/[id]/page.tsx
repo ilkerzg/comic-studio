@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -9,7 +10,6 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  Download,
   FileArchive,
   FileText,
   Loader2,
@@ -18,7 +18,19 @@ import { Shell } from "@/components/Shell";
 import { exportCbz, exportPdf } from "@/lib/export";
 import { useStudio } from "@/lib/state";
 import type { ComicProject, PanelState } from "@/lib/types";
-import { cn } from "@/lib/utils";
+
+type ReadyPanel = PanelState & { imageUrl: string };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const HTMLFlipBook = dynamic<any>(() => import("react-pageflip").then((m) => m.default), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[60vh] w-full items-center justify-center text-[12px] text-foreground/55">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Loading book...
+    </div>
+  ),
+});
 
 export default function ReadPage() {
   const params = useParams<{ id: string }>();
@@ -46,7 +58,7 @@ function Reader({ projectId }: { projectId: string }) {
   const brief = project?.brief;
 
   const panels = useMemo(
-    () => (project?.panels ?? []).filter((p) => p.imageUrl) as (PanelState & { imageUrl: string })[],
+    () => (project?.panels ?? []).filter((p) => p.imageUrl) as ReadyPanel[],
     [project?.panels],
   );
 
@@ -67,7 +79,7 @@ function Reader({ projectId }: { projectId: string }) {
   if (panels.length === 0) {
     return (
       <div className="mt-16 rounded-2xl border border-subtle bg-surface p-8 text-center">
-        <div className="text-[13px] text-foreground/70">No panels ready yet.</div>
+        <div className="text-[13px] text-foreground/70">No pages ready yet.</div>
         <Link
           href={`/studio/${projectId}`}
           className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-subtle bg-surface-2 px-4 py-2 text-[12.5px]"
@@ -78,145 +90,128 @@ function Reader({ projectId }: { projectId: string }) {
     );
   }
 
-  if (brief.format === "webtoon") return <WebtoonReader project={project} panels={panels} />;
-  return <FlipbookReader project={project} panels={panels} rtl={brief.format === "manga"} />;
+  return <FlipbookReader project={project} panels={panels} />;
 }
 
-function WebtoonReader({ project, panels }: { project: ComicProject; panels: (PanelState & { imageUrl: string })[] }) {
+const BookPage = forwardRef<HTMLDivElement, { panel: ReadyPanel }>(function BookPage(
+  { panel },
+  ref,
+) {
   return (
-    <div className="mt-6">
-      <TopBar panelCount={panels.length} project={project} />
-      <div className="mx-auto mt-6 flex max-w-[720px] flex-col gap-2">
-        {panels.map((p) => (
-          <div key={p.index} className="relative overflow-hidden rounded-lg border border-subtle bg-black">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.imageUrl} alt={`Page ${p.index}`} className="block h-auto w-full" />
-          </div>
-        ))}
+    <div ref={ref} className="relative h-full w-full overflow-hidden bg-black">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={panel.imageUrl}
+        alt={`Page ${panel.index}`}
+        className="h-full w-full object-contain"
+        draggable={false}
+      />
+      <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
+        #{String(panel.index).padStart(2, "0")}
       </div>
     </div>
   );
-}
+});
+
+type FlipBookHandle = {
+  pageFlip: () => {
+    flipNext: () => void;
+    flipPrev: () => void;
+    turnToPage: (n: number) => void;
+  };
+};
 
 function FlipbookReader({
   project,
   panels,
-  rtl,
 }: {
   project: ComicProject;
-  panels: (PanelState & { imageUrl: string })[];
-  rtl: boolean;
+  panels: ReadyPanel[];
 }) {
-  const [cursor, setCursor] = useState(0);
-  const [flip, setFlip] = useState<null | { from: number; to: number; dir: 1 | -1 }>(null);
-
+  const bookRef = useRef<FlipBookHandle | null>(null);
+  const [page, setPage] = useState(0);
   const total = panels.length;
-  const canPrev = cursor > 0;
-  const canNext = cursor < total - 1;
-
-  const go = useCallback(
-    (dir: 1 | -1) => {
-      setFlip((current) => {
-        if (current) return current;
-        const target = cursor + dir;
-        if (target < 0 || target >= total) return current;
-        return { from: cursor, to: target, dir };
-      });
-    },
-    [cursor, total],
-  );
-
-  useEffect(() => {
-    if (!flip) return;
-    const id = window.setTimeout(() => {
-      setCursor(flip.to);
-      setFlip(null);
-    }, 650);
-    return () => window.clearTimeout(id);
-  }, [flip]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "ArrowRight") go(rtl ? -1 : 1);
-      if (e.key === "ArrowLeft") go(rtl ? 1 : -1);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [go, rtl]);
 
   const aspectRatio =
     project.brief.aspect === "landscape"
-      ? "16 / 9"
+      ? 16 / 9
       : project.brief.aspect === "square"
-        ? "1 / 1"
-        : "3 / 4";
+        ? 1
+        : 3 / 4;
 
-  const backPage = panels[flip ? flip.to : cursor];
-  const flipPage = flip ? panels[flip.from] : null;
-  const flipClass = flip
-    ? (flip.dir === 1) === !rtl
-      ? "flip-toward-left"
-      : "flip-toward-right"
-    : "";
+  const pageHeight = 1000;
+  const pageWidth = Math.round(pageHeight * aspectRatio);
+
+  const flipNext = useCallback(() => {
+    bookRef.current?.pageFlip()?.flipNext();
+  }, []);
+
+  const flipPrev = useCallback(() => {
+    bookRef.current?.pageFlip()?.flipPrev();
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowRight") flipNext();
+      if (e.key === "ArrowLeft") flipPrev();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [flipNext, flipPrev]);
 
   return (
     <div className="mt-6">
       <TopBar panelCount={total} project={project} />
-      <div className="relative mt-6 flex items-center justify-center gap-4">
+      <div className="relative mt-6 flex items-center justify-center gap-3">
         <button
           type="button"
-          onClick={() => go(rtl ? 1 : -1)}
-          disabled={rtl ? !canNext : !canPrev}
-          aria-label={rtl ? "Next page" : "Previous page"}
+          onClick={flipPrev}
+          disabled={page === 0}
+          aria-label="Previous page"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <div
-          className="ink-border relative overflow-hidden rounded-2xl bg-[oklch(0.07_0_0)]"
-          style={{
-            perspective: "2500px",
-            aspectRatio,
-            height: "min(82vh, 1100px)",
-            maxWidth: "min(92vw, 1100px)",
-            boxShadow:
-              "inset 0 0 0 1.5px oklch(0 0 0 / 0.55), 0 30px 80px -20px oklch(0 0 0 / 0.75)",
-          }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={backPage.imageUrl}
-              alt={`Page ${backPage.index}`}
-              className="h-full w-full object-contain"
-            />
-          </div>
-          {flipPage && (
-            <div
-              className={cn(
-                "absolute inset-0 flex items-center justify-center bg-black will-change-transform",
-                flipClass,
-              )}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={flipPage.imageUrl}
-                alt={`Page ${flipPage.index}`}
-                className="h-full w-full object-contain"
-              />
-            </div>
-          )}
-          <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
-            #{String(backPage.index).padStart(2, "0")}
-          </div>
+        <div className="flex-1" style={{ maxWidth: "min(96vw, 1400px)" }}>
+          <HTMLFlipBook
+            ref={bookRef}
+            width={pageWidth}
+            height={pageHeight}
+            size="stretch"
+            minWidth={280}
+            maxWidth={900}
+            minHeight={400}
+            maxHeight={1400}
+            drawShadow
+            flippingTime={700}
+            usePortrait
+            startZIndex={0}
+            autoSize
+            maxShadowOpacity={0.5}
+            showCover={false}
+            mobileScrollSupport
+            clickEventForward
+            useMouseEvents
+            swipeDistance={30}
+            showPageCorners
+            disableFlipByClick={false}
+            startPage={0}
+            className="mx-auto"
+            style={{}}
+            onFlip={(e: { data: number }) => setPage(e.data)}
+          >
+            {panels.map((p) => (
+              <BookPage key={p.index} panel={p} />
+            ))}
+          </HTMLFlipBook>
         </div>
 
         <button
           type="button"
-          onClick={() => go(rtl ? -1 : 1)}
-          disabled={rtl ? !canPrev : !canNext}
-          aria-label={rtl ? "Previous page" : "Next page"}
+          onClick={flipNext}
+          disabled={page >= total - 1}
+          aria-label="Next page"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
         >
           <ChevronRight className="h-4 w-4" />
@@ -225,10 +220,10 @@ function FlipbookReader({
 
       <div className="mt-5 flex items-center justify-center gap-2 text-[11.5px] text-foreground/55">
         <span>
-          Page {cursor + 1} / {total}
+          Page {page + 1} / {total}
         </span>
         <span>·</span>
-        <span>Use ← and → to turn the page{rtl ? " (manga: reversed)" : ""}</span>
+        <span>Use ← and → or drag the page corner to turn</span>
       </div>
     </div>
   );

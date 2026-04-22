@@ -297,16 +297,31 @@ export async function generateStoryboard(brief: Brief, falKey: string): Promise<
   return prepared.slice(0, brief.panelCount);
 }
 
+function buildImageRolePrefix(labels: string[] | undefined, count: number): string {
+  if (!labels || labels.length === 0 || count === 0) return "";
+  const lines = labels
+    .slice(0, count)
+    .map((label, i) => `- Image ${i + 1} (#image${i + 1}): ${label}`);
+  return [
+    "IMPORTANT — reference image roles (fixed order, obey strictly):",
+    ...lines,
+    "Image 1 is ONLY a source of art style (linework, paneling, palette, lettering). Never copy its characters, outfits, or scene content into the output.",
+    "All character identities must come strictly from their assigned reference image above; never invent a face or swap a character's look.",
+  ].join("\n");
+}
+
 export async function renderPanel({
   falKey,
   prompt,
   imageUrls,
+  refLabels,
   aspect,
   quality = "high",
 }: {
   falKey: string;
   prompt: string;
   imageUrls: string[];
+  refLabels?: string[];
   aspect: Brief["aspect"];
   quality?: "low" | "medium" | "high";
 }): Promise<{ url: string; width?: number; height?: number }> {
@@ -314,10 +329,12 @@ export async function renderPanel({
   const resolvedUrls = await resolveRefUrls(falKey, imageUrls);
   const hasRefs = resolvedUrls.length > 0;
   const endpoint = hasRefs ? "openai/gpt-image-2/edit" : "openai/gpt-image-2";
+  const rolePrefix = buildImageRolePrefix(refLabels, resolvedUrls.length);
+  const initialPrompt = rolePrefix ? `${rolePrefix}\n\n${prompt}` : prompt;
 
   const img = await runWithPolicyRetry({
     falKey,
-    initialPrompt: prompt,
+    initialPrompt,
     preserveMarkers: true,
     attempt: async (p) => {
       const input: Record<string, unknown> = {
