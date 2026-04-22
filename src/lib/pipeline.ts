@@ -317,6 +317,7 @@ export async function renderPanel({
   refLabels,
   aspect,
   quality = "high",
+  onRequestId,
 }: {
   falKey: string;
   prompt: string;
@@ -324,6 +325,7 @@ export async function renderPanel({
   refLabels?: string[];
   aspect: Brief["aspect"];
   quality?: "low" | "medium" | "high";
+  onRequestId?: (requestId: string, endpoint: string) => void;
 }): Promise<{ url: string; width?: number; height?: number }> {
   configureFal(falKey);
   const resolvedUrls = await resolveRefUrls(falKey, imageUrls);
@@ -345,7 +347,13 @@ export async function renderPanel({
         output_format: "png",
       };
       if (hasRefs) input.image_urls = resolvedUrls;
-      const res = (await fal.subscribe(endpoint, { input, logs: false })) as unknown as {
+      const res = (await fal.subscribe(endpoint, {
+        input,
+        logs: false,
+        onEnqueue: (requestId: string) => {
+          if (requestId) onRequestId?.(requestId, endpoint);
+        },
+      })) as unknown as {
         data: { images?: { url: string; width?: number; height?: number }[] };
       };
       const image = res.data.images?.[0];
@@ -354,4 +362,37 @@ export async function renderPanel({
     },
   });
   return { url: img.url, width: img.width, height: img.height };
+}
+
+export async function resumeRenderPanel({
+  falKey,
+  endpoint,
+  requestId,
+  pollMs = 2500,
+  signal,
+}: {
+  falKey: string;
+  endpoint: string;
+  requestId: string;
+  pollMs?: number;
+  signal?: AbortSignal;
+}): Promise<{ url: string; width?: number; height?: number }> {
+  configureFal(falKey);
+  while (true) {
+    if (signal?.aborted) throw new Error("Aborted");
+    const status = (await fal.queue.status(endpoint, { requestId, logs: false })) as {
+      status: string;
+    };
+    if (status.status === "COMPLETED") break;
+    if (status.status !== "IN_QUEUE" && status.status !== "IN_PROGRESS") {
+      throw new Error(`Fal request ${requestId} ended with status ${status.status}`);
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+  const result = (await fal.queue.result(endpoint, { requestId })) as unknown as {
+    data: { images?: { url: string; width?: number; height?: number }[] };
+  };
+  const image = result.data.images?.[0];
+  if (!image?.url) throw new Error("No image returned on resume");
+  return { url: image.url, width: image.width, height: image.height };
 }

@@ -64,9 +64,11 @@ function Wizard() {
     const project = {
       id: projectId,
       createdAt: Date.now(),
+      updatedAt: Date.now(),
       brief,
       status: "draft" as const,
       autoStart: true,
+      phase: "idle" as const,
       panels: Array.from({ length: brief.panelCount }, (_, i) => ({
         index: i + 1,
         status: "pending" as const,

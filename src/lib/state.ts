@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Brief, CharacterDraft, ComicProject, PanelState } from "./types";
+import type { Brief, CharacterDraft, ComicProject, PanelState, ProjectPhase } from "./types";
 import { uid } from "./utils";
 
 type StudioState = {
@@ -21,6 +21,8 @@ type StudioState = {
   reset: () => void;
   registerProject: (project: ComicProject) => void;
   updatePanels: (projectId: string, patch: PanelState[]) => void;
+  patchPanel: (projectId: string, index: number, patch: Partial<PanelState>) => void;
+  setProjectPhase: (projectId: string, phase: ProjectPhase, phaseError?: string | null) => void;
   consumeAutoStart: (projectId: string) => boolean;
   getProject: (projectId: string) => ComicProject | undefined;
 };
@@ -87,7 +89,35 @@ export const useStudio = create<StudioState>()(
       updatePanels: (projectId, patch) =>
         set((s) => ({
           projects: s.projects.map((p) =>
-            p.id === projectId ? { ...p, panels: patch } : p,
+            p.id === projectId ? { ...p, panels: patch, updatedAt: Date.now() } : p,
+          ),
+        })),
+      patchPanel: (projectId, index, patch) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  updatedAt: Date.now(),
+                  panels: p.panels.map((pn) =>
+                    pn.index === index ? { ...pn, ...patch } : pn,
+                  ),
+                }
+              : p,
+          ),
+        })),
+      setProjectPhase: (projectId, phase, phaseError) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  phase,
+                  phaseError: phaseError ?? undefined,
+                  updatedAt: Date.now(),
+                  ...(phase === "rendering" && !p.startedAt ? { startedAt: Date.now() } : {}),
+                }
+              : p,
           ),
         })),
       consumeAutoStart: (projectId) => {
@@ -102,6 +132,6 @@ export const useStudio = create<StudioState>()(
       },
       getProject: (projectId) => get().projects.find((p) => p.id === projectId),
     }),
-    { name: "comic-studio-state", version: 1 },
+    { name: "comic-studio-state", version: 2 },
   ),
 );

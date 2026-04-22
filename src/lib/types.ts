@@ -51,7 +51,13 @@ export type PanelState = {
   beat?: PanelBeat;
   imageUrl?: string;
   error?: string;
+  requestId?: string;
+  endpoint?: string;
+  startedAt?: number;
+  finishedAt?: number;
 };
+
+export type ProjectPhase = "idle" | "outlining" | "rendering" | "done" | "error";
 
 export type ComicProject = {
   id: string;
@@ -60,4 +66,8 @@ export type ComicProject = {
   panels: PanelState[];
   status: "draft" | "outlining" | "rendering" | "complete" | "error";
   autoStart?: boolean;
+  phase?: ProjectPhase;
+  phaseError?: string;
+  startedAt?: number;
+  updatedAt?: number;
 };
