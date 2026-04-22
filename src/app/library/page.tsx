@@ -6,26 +6,26 @@ import { LIBRARY_EXAMPLES } from "@/lib/library-examples";
 export default function LibraryPage() {
   return (
     <Shell>
-      <div className="mt-10 flex items-center justify-between">
+      <div className="mt-5 flex flex-col items-start gap-4 sm:mt-10 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-[32px] tracking-wider">
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] tracking-wider sm:text-[32px]">
             LIBRARY
           </h1>
           <p className="mt-2 max-w-2xl text-[13px] text-foreground/65">
             Built-in reference shelf from the repo. Public inspiration lives here; your own generations live in History.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <Link
             href="/history"
-            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[12.5px]"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[12.5px] sm:h-10 sm:flex-initial"
           >
             <History className="h-4 w-4" />
             History
           </Link>
           <Link
             href="/new"
-            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink sm:h-10 sm:flex-initial"
           >
             <Sparkles className="h-4 w-4" />
             New comic
@@ -33,7 +33,7 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2 lg:grid-cols-3">
         {LIBRARY_EXAMPLES.map((entry) => (
           <div
             key={entry.id}

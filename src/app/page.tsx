@@ -8,31 +8,31 @@ import { STYLES } from "@/lib/styles";
 export default function LandingPage() {
   return (
     <Shell>
-      <section className="relative mt-14 overflow-hidden rounded-3xl border border-subtle bg-surface p-8 sm:p-12">
+      <section className="relative mt-5 overflow-hidden rounded-3xl border border-subtle bg-surface p-5 sm:mt-14 sm:p-12">
         <div className="halftone absolute inset-0 opacity-30" aria-hidden />
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-[family-name:var(--font-display)] text-[11.5px] uppercase tracking-[0.16em] text-accent">
             Comic Studio
           </span>
-          <h1 className="mt-5 max-w-3xl font-[family-name:var(--font-display)] text-[52px] leading-[0.92] tracking-[0.01em] text-foreground sm:text-[72px]">
+          <h1 className="mt-4 max-w-3xl font-[family-name:var(--font-display)] text-[38px] leading-[0.95] tracking-[0.01em] text-foreground sm:mt-5 sm:text-[72px]">
             Direct a whole comic in one brief.
           </h1>
-          <p className="mt-5 max-w-[640px] text-[15.5px] leading-relaxed text-foreground/70">
+          <p className="mt-4 max-w-[640px] text-[14px] leading-relaxed text-foreground/70 sm:mt-5 sm:text-[15.5px]">
             Pick a style. Cast one to four characters. Write the story. An agent drafts the
-            storyboard, fires off every panel on <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[13px]">openai/gpt-image-2</code>, and
+            storyboard, fires off every panel on <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[12px] sm:text-[13px]">openai/gpt-image-2</code>, and
             stitches a readable book on the other side.
           </p>
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-col gap-2 sm:mt-7 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <Link
               href="/new"
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5 font-[family-name:var(--font-display)] text-[15px] tracking-wider text-accent-ink transition hover:brightness-110"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent px-5 font-[family-name:var(--font-display)] text-[15px] tracking-wider text-accent-ink transition hover:brightness-110 active:brightness-95 sm:h-11 sm:w-auto"
             >
               Start a comic
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/library"
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-subtle bg-surface-2 px-5 text-[13px] font-medium text-foreground/85 hover:border-white/20"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-subtle bg-surface-2 px-5 text-[13px] font-medium text-foreground/85 hover:border-white/20 sm:w-auto"
             >
               <BookOpen className="h-4 w-4" />
               Open the library
@@ -41,11 +41,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mt-14">
-        <h2 className="font-[family-name:var(--font-display)] text-[26px] tracking-wider text-foreground">
+      <section className="mt-10 sm:mt-14">
+        <h2 className="font-[family-name:var(--font-display)] text-[22px] tracking-wider text-foreground sm:text-[26px]">
           HOW IT WORKS
         </h2>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-5 sm:grid-cols-3 sm:gap-4">
           {[
             {
               icon: Wand2,
@@ -75,14 +75,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mt-14">
+      <section className="mt-10 sm:mt-14">
         <div className="flex items-end justify-between">
-          <h2 className="font-[family-name:var(--font-display)] text-[26px] tracking-wider text-foreground">
+          <h2 className="font-[family-name:var(--font-display)] text-[22px] tracking-wider text-foreground sm:text-[26px]">
             STYLE CARDS
           </h2>
-          <span className="text-[12px] text-foreground/50">{STYLES.length} styles, more coming</span>
+          <span className="text-[11px] text-foreground/50 sm:text-[12px]">{STYLES.length} styles</span>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:grid-cols-4 sm:gap-3">
           {STYLES.map((s) => (
             <div
               key={s.id}
