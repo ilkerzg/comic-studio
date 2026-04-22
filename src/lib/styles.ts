@@ -18,15 +18,6 @@ export const STYLES: StyleEntry[] = [
     reference: "/styles/shonen-bw.png",
   },
   {
-    id: "shonen-color",
-    name: "Modern Shonen",
-    tagline: "Cel-shaded color, bold outlines, saturated punch.",
-    promptStub:
-      "Modern colored shonen manga, bold black outlines, cel-shaded palette with saturated pops, dynamic speed lines, vibrant action-ready backgrounds, confident readable composition.",
-    palette: "color",
-    reference: "/styles/shonen-color.png",
-  },
-  {
     id: "shojo",
     name: "Shojo",
     tagline: "Soft, emotional, flower accents.",
@@ -36,49 +27,67 @@ export const STYLES: StyleEntry[] = [
     reference: "/styles/shojo.png",
   },
   {
-    id: "josei",
-    name: "Josei",
-    tagline: "Refined line, muted adult palette.",
+    id: "noir",
+    name: "Noir",
+    tagline: "Hard shadows, rain, chiaroscuro.",
     promptStub:
-      "Josei manga style, refined delicate line work, muted adult palette, nuanced facial expressions, elegant fashion and interiors, quiet emotional compositions.",
+      "Black and white film noir comic, high contrast chiaroscuro, heavy solid black shadows, rain and smoke textures, cinematic low-key lighting, venetian blind slats.",
     palette: "mono",
-    reference: "/styles/josei.png",
+    reference: "/styles/noir.png",
   },
   {
-    id: "seinen",
-    name: "Seinen",
-    tagline: "Gritty ink, realistic proportions.",
+    id: "underground-comix",
+    name: "Underground Comix",
+    tagline: "Scratchy ink, 60s counterculture.",
     promptStub:
-      "Seinen manga style, gritty ink work, realistic proportions, moody chiaroscuro, detailed urban backgrounds, restrained emotion, cinematic framing.",
+      "1960s underground comix style, scratchy hand-drawn ink, dense crosshatching, exaggerated caricatured characters, crowded chaotic panels, warm off-white newsprint paper.",
     palette: "mono",
-    reference: "/styles/seinen.png",
+    reference: "/styles/underground-comix.png",
   },
   {
-    id: "horror-manga",
-    name: "Horror Manga",
-    tagline: "Obsessive hatching, stark dread.",
+    id: "ink-wash",
+    name: "Ink Wash",
+    tagline: "Sumi-e brush, negative space.",
     promptStub:
-      "Junji Ito inspired horror manga, obsessive ink hatching and crosshatching, unsettling organic detail, stark black and white contrast, dread-filled compositions.",
+      "Sumi-e inspired ink wash comic, expressive brushstrokes, minimal greyscale, generous negative space, calligraphic gesture, meditative tone.",
     palette: "mono",
-    reference: "/styles/horror-manga.png",
+    reference: "/styles/ink-wash.png",
   },
   {
-    id: "chibi",
-    name: "Chibi",
-    tagline: "Super-deformed cute, big heads.",
+    id: "line-art",
+    name: "Line Art",
+    tagline: "Pure ink, no shading, full white.",
     promptStub:
-      "Chibi style comic, super-deformed characters, oversized heads, soft pastel palette, bouncy clean line, simple cheerful backgrounds, playful expression.",
+      "Completely redraw as pure line art on bright white paper, uniform hairline black ink contours only, absolutely no shading, no hatching, no gray tones, no color, no gradients, generous white negative space, clean minimal contour drawing, every panel a crisp line-only sketch.",
+    palette: "mono",
+    reference: "/styles/line-art.png",
+  },
+  {
+    id: "woodcut",
+    name: "Woodcut",
+    tagline: "Carved bold blocks, graphic relief.",
+    promptStub:
+      "Completely redraw as a black and white woodcut relief print, chunky carved black shapes, rough chiseled white reveals, bold graphic silhouettes, heavy mark-making texture, high contrast with no gradients, visible grain from pressed ink, 1920s expressionist relief feel.",
+    palette: "mono",
+    reference: "/styles/woodcut.png",
+  },
+  {
+    id: "halftone-bw",
+    name: "Halftone Press",
+    tagline: "Newsprint dots, stark two-tone.",
+    promptStub:
+      "Completely redraw in stark black and white halftone newspaper print, every gray replaced by visible round dot patterns of varying density, no screentone textures, no gradients, coarse dot pitch across skies and shadows, yellowed newsprint paper tone, vintage press feel.",
+    palette: "mono",
+    reference: "/styles/halftone-bw.png",
+  },
+  {
+    id: "shonen-color",
+    name: "Modern Shonen",
+    tagline: "Cel-shaded color, bold outlines, vivid palette.",
+    promptStub:
+      "Modern colored shonen manga, bold black outlines, cel-shaded palette with vivid accent colors, energetic motion lines, bright dynamic backgrounds, confident readable composition.",
     palette: "color",
-    reference: "/styles/chibi.png",
-  },
-  {
-    id: "manhwa-webtoon",
-    name: "Manhwa",
-    tagline: "Digital gloss, blended gradients.",
-    promptStub:
-      "Korean manhwa illustration, crisp digital line art, soft blended color gradients, glossy highlights on hair and eyes, clean modern composition.",
-    palette: "color",
-    reference: "/styles/manhwa-webtoon.png",
+    reference: "/styles/shonen-color.png",
   },
   {
     id: "ghibli",
@@ -108,15 +117,6 @@ export const STYLES: StyleEntry[] = [
     reference: "/styles/moebius.png",
   },
   {
-    id: "western-superhero",
-    name: "Pop Comic",
-    tagline: "Halftone dots, thick ink, pulp mood.",
-    promptStub:
-      "Pop comic book illustration, dotted halftone backgrounds, thick black outlines, saturated primary color palette, clean panel composition, pulp mood.",
-    palette: "color",
-    reference: "/styles/western-superhero.png",
-  },
-  {
     id: "golden-age",
     name: "Golden Age",
     tagline: "1940s CMYK, newsprint texture.",
@@ -124,42 +124,6 @@ export const STYLES: StyleEntry[] = [
       "1940s golden age superhero comic, thick ink outlines, limited flat CMYK palette, newsprint grain, dramatic heroic poses, period accurate starbursts and captions.",
     palette: "color",
     reference: "/styles/golden-age.png",
-  },
-  {
-    id: "graphic-novel",
-    name: "Graphic Novel",
-    tagline: "Painterly grey tones, serious.",
-    promptStub:
-      "Modern graphic novel ink work, muted naturalistic color, painterly grey tones, serious adult framing, fine line detail, subdued realistic palette.",
-    palette: "color",
-    reference: "/styles/graphic-novel.png",
-  },
-  {
-    id: "noir",
-    name: "Noir",
-    tagline: "Hard shadows, rain, chiaroscuro.",
-    promptStub:
-      "Black and white film noir comic, high contrast chiaroscuro, heavy solid black shadows, rain and smoke textures, cinematic low-key lighting, venetian blind slats.",
-    palette: "mono",
-    reference: "/styles/noir.png",
-  },
-  {
-    id: "underground-comix",
-    name: "Underground Comix",
-    tagline: "Scratchy ink, 60s counterculture.",
-    promptStub:
-      "1960s underground comix style, scratchy hand-drawn ink, dense crosshatching, exaggerated caricatured characters, crowded chaotic panels, warm off-white newsprint paper.",
-    palette: "mono",
-    reference: "/styles/underground-comix.png",
-  },
-  {
-    id: "newspaper-strip",
-    name: "Newspaper Strip",
-    tagline: "Sunday funnies, benday dots.",
-    promptStub:
-      "Sunday newspaper comic strip, clean cartoon line, flat benday dot coloring, cheerful expressions, simple backgrounds, limited bright palette, warm paper tone.",
-    palette: "color",
-    reference: "/styles/newspaper-strip.png",
   },
   {
     id: "watercolor",
@@ -171,15 +135,6 @@ export const STYLES: StyleEntry[] = [
     reference: "/styles/watercolor.png",
   },
   {
-    id: "ink-wash",
-    name: "Ink Wash",
-    tagline: "Sumi-e brush, negative space.",
-    promptStub:
-      "Sumi-e inspired ink wash comic, expressive brushstrokes, minimal greyscale, generous negative space, calligraphic gesture, meditative tone.",
-    palette: "mono",
-    reference: "/styles/ink-wash.png",
-  },
-  {
     id: "cyberpunk",
     name: "Cyberpunk",
     tagline: "Neon rim light, wet streets.",
@@ -187,15 +142,6 @@ export const STYLES: StyleEntry[] = [
       "Cyberpunk neon noir comic, glowing magenta and cyan rim lights, reflective wet streets, holographic signage, high-tech urban clutter, heavy blacks with saturated accents.",
     palette: "color",
     reference: "/styles/cyberpunk.png",
-  },
-  {
-    id: "retro-pulp",
-    name: "Retro Pulp",
-    tagline: "1950s EC, misregistered CMYK.",
-    promptStub:
-      "Retro 1950s pulp comic, CMYK offset print with slight registration misalignment, aged paper tone, melodramatic compositions, pulpy color palette, halftone skies.",
-    palette: "color",
-    reference: "/styles/retro-pulp.png",
   },
   {
     id: "risograph",
@@ -207,42 +153,6 @@ export const STYLES: StyleEntry[] = [
     reference: "/styles/risograph.png",
   },
   {
-    id: "dark-fantasy",
-    name: "Dark Fantasy",
-    tagline: "Engraved ink, medieval gloom.",
-    promptStub:
-      "Dark fantasy ink etching style, dense crosshatching, engraved texture, grim medieval mood, monochrome ink tones, atmospheric gloom, fine feather-weight lines.",
-    palette: "mono",
-    reference: "/styles/dark-fantasy.png",
-  },
-  {
-    id: "pastel-slice",
-    name: "Pastel Slice of Life",
-    tagline: "Cozy pastel, gentle pencil line.",
-    promptStub:
-      "Soft slice of life comic, pale pastel palette, gentle pencil line, cozy domestic spaces, muted natural light, calm and heartwarming tone.",
-    palette: "color",
-    reference: "/styles/pastel-slice.png",
-  },
-  {
-    id: "pixel-art",
-    name: "Pixel Art",
-    tagline: "16-bit crunch, arcade nostalgia.",
-    promptStub:
-      "Pixel art comic page, 16 bit era aesthetic, crisp pixel outlines, limited indexed palette, blocky shadow and highlight, arcade nostalgia.",
-    palette: "color",
-    reference: "/styles/pixel-art.png",
-  },
-  {
-    id: "kids-cartoon",
-    name: "Kids Cartoon",
-    tagline: "Friendly outlines, bright joy.",
-    promptStub:
-      "Children's cartoon comic, thick friendly outlines, bright cheerful colors, rounded shapes, simple expressive faces, playful tone, clear storytelling.",
-    palette: "color",
-    reference: "/styles/kids-cartoon.png",
-  },
-  {
     id: "graffiti-street",
     name: "Graffiti Street",
     tagline: "Spray texture, urban typography.",
@@ -252,13 +162,31 @@ export const STYLES: StyleEntry[] = [
     reference: "/styles/graffiti-street.png",
   },
   {
-    id: "gothic-ink",
-    name: "Gothic Ink",
-    tagline: "Cathedral blacks, velvet dread.",
+    id: "blueprint",
+    name: "Blueprint",
+    tagline: "Cyanotype, white technical line.",
     promptStub:
-      "Gothic horror ink comic, intricate cathedral backgrounds, candlelit shadows, velvet blacks, ornamental borders, dread and melancholy atmosphere.",
-    palette: "mono",
-    reference: "/styles/gothic-ink.png",
+      "Completely redraw as a blueprint schematic, deep cyan blue background covering every panel, all linework as white technical drafting strokes, grid overlays and measurement annotations, drafted construction lines, no photographic shading, every element reinterpreted as an engineering diagram.",
+    palette: "color",
+    reference: "/styles/blueprint.png",
+  },
+  {
+    id: "ukiyo-e",
+    name: "Ukiyo-e",
+    tagline: "Woodblock flats, mineral pigments.",
+    promptStub:
+      "Completely redraw as a Japanese ukiyo-e woodblock print, flat mineral pigment fills in ochre, indigo, cream and muted crimson, sumi ink contours, stylized cloud and wave patterns replacing realistic sky and water, traditional tori and textile motifs, no photographic depth, nihonga composition.",
+    palette: "color",
+    reference: "/styles/ukiyo-e.png",
+  },
+  {
+    id: "crayon",
+    name: "Crayon Sketch",
+    tagline: "Wax crayon texture, warm paper.",
+    promptStub:
+      "Completely redraw as a wax crayon illustration on warm toned paper, visible crayon strokes and waxy grain, scribbled shading instead of smooth gradients, hand-drawn wobbly childlike contours, naive color mixing, paper fiber texture showing through, sketchbook feel.",
+    palette: "color",
+    reference: "/styles/crayon.png",
   },
 ];
 
