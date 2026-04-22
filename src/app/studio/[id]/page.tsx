@@ -42,10 +42,15 @@ function StudioView({ projectId }: { projectId: string }) {
   const { key } = useFalKey();
   const project = useStudio((s) => s.getProject(projectId));
   const updatePanels = useStudio((s) => s.updatePanels);
+  const consumeAutoStart = useStudio((s) => s.consumeAutoStart);
+  const initialPhase: "idle" | "done" = (project?.panels ?? []).some((p) => p.status === "done")
+    ? "done"
+    : "idle";
   const [panels, setPanels] = useState<PanelState[]>(project?.panels ?? []);
-  const [phase, setPhase] = useState<"idle" | "outlining" | "rendering" | "done" | "error">("idle");
+  const [phase, setPhase] = useState<"idle" | "outlining" | "rendering" | "done" | "error">(initialPhase);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
+  const autoStartChecked = useRef(false);
 
   const brief = project?.brief;
   const style = brief ? STYLES.find((s) => s.id === brief.styleId) : undefined;
@@ -128,10 +133,13 @@ function StudioView({ projectId }: { projectId: string }) {
   }, [project, brief, key, projectId, updatePanels, style?.reference, sheetUrls]);
 
   useEffect(() => {
-    if (phase === "idle" && project && !started.current) {
+    if (!project || autoStartChecked.current) return;
+    autoStartChecked.current = true;
+    if (phase !== "idle" || started.current) return;
+    if (consumeAutoStart(projectId)) {
       void run();
     }
-  }, [phase, project, run]);
+  }, [project, projectId, consumeAutoStart, phase, run]);
 
   if (!project || !brief) {
     return (
@@ -157,29 +165,63 @@ function StudioView({ projectId }: { projectId: string }) {
         <div>
           <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Studio</div>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-[32px] tracking-wider">
-            {style ? style.name.toUpperCase() : "COMIC"} · {brief.panelCount} PANELS
+            {style ? style.name.toUpperCase() : "COMIC"} · {brief.panelCount} PAGES
           </h1>
           <p className="mt-1 max-w-[620px] text-[13px] text-foreground/60">{brief.story}</p>
         </div>
         <div className="flex items-center gap-2">
           {phase === "done" ? (
-            <Link
-              href={`/read/${projectId}`}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink"
-            >
-              <BookOpen className="h-4 w-4" />
-              Open the book
-            </Link>
-          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  started.current = false;
+                  setError(null);
+                  setPhase("idle");
+                  void run();
+                }}
+                disabled={!key}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-subtle bg-surface px-4 text-[13px] text-foreground/80 hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Play className="h-4 w-4" />
+                Re-run
+              </button>
+              <Link
+                href={`/read/${projectId}`}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink"
+              >
+                <BookOpen className="h-4 w-4" />
+                Open the book
+              </Link>
+            </>
+          ) : phase === "outlining" || phase === "rendering" ? (
             <div className="inline-flex h-10 items-center gap-2 rounded-full border border-subtle bg-surface px-4 text-[12.5px] text-foreground/75">
-              {phase === "outlining" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {phase === "rendering" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {phase === "idle" && <Wand2 className="h-3.5 w-3.5" />}
-              {phase === "outlining" && "Outlining storyboard..."}
-              {phase === "rendering" && `Rendering ${done}/${total}`}
-              {phase === "idle" && "Queued"}
-              {phase === "error" && "Error"}
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {phase === "outlining" ? "Outlining storyboard..." : `Rendering ${done}/${total}`}
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                started.current = false;
+                setError(null);
+                setPhase("idle");
+                void run();
+              }}
+              disabled={!key}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 font-[family-name:var(--font-display)] text-[14px] tracking-wider text-accent-ink disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {phase === "error" ? (
+                <Play className="h-4 w-4" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
+              )}
+              {phase === "error"
+                ? "Retry"
+                : panels.some((p) => p.status === "done" || p.status === "failed")
+                  ? "Re-run"
+                  : "Start production"}
+            </button>
           )}
         </div>
       </div>
@@ -194,7 +236,9 @@ function StudioView({ projectId }: { projectId: string }) {
               type="button"
               onClick={() => {
                 started.current = false;
+                setError(null);
                 setPhase("idle");
+                void run();
               }}
               className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full border border-red-500/40 px-3 text-[12px]"
             >
@@ -214,7 +258,7 @@ function StudioView({ projectId }: { projectId: string }) {
 
       {phase === "done" && failed > 0 && (
         <div className="mt-5 rounded-xl border border-yellow-500/30 bg-yellow-500/[0.05] p-3 text-[12.5px] text-yellow-200">
-          {failed} panel{failed === 1 ? "" : "s"} failed. The book opens anyway; re-run to patch.
+          {failed} page{failed === 1 ? "" : "s"} failed. The book opens anyway; re-run to patch.
         </div>
       )}
     </div>

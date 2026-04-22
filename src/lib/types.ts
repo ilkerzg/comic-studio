@@ -26,12 +26,21 @@ export type Brief = {
   panelCount: number;
 };
 
+export type PanelDialog = { speaker?: string; text: string };
+
+export type SubPanel = {
+  position: string;
+  composition: string;
+  action: string;
+  dialog: PanelDialog[];
+  sfx?: string;
+};
+
 export type PanelBeat = {
   index: number;
   title: string;
-  composition: string;
-  beat: string;
-  dialog: { speaker?: string; text: string }[];
+  layout: string;
+  subPanels: SubPanel[];
   imageRefs: string[];
   prompt: string;
 };
@@ -50,4 +59,5 @@ export type ComicProject = {
   brief: Brief;
   panels: PanelState[];
   status: "draft" | "outlining" | "rendering" | "complete" | "error";
+  autoStart?: boolean;
 };
