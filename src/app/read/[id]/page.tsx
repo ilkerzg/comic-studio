@@ -93,12 +93,34 @@ function Reader({ projectId }: { projectId: string }) {
   return <FlipbookReader project={project} panels={panels} />;
 }
 
+const LENS_SIZE = 220;
+const LENS_ZOOM = 2.4;
+
 const BookPage = forwardRef<HTMLDivElement, { panel: ReadyPanel }>(function BookPage(
   { panel },
   ref,
 ) {
+  const [lens, setLens] = useState<{ x: number; y: number; w: number; h: number } | null>(
+    null,
+  );
+
+  function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setLens({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      w: rect.width,
+      h: rect.height,
+    });
+  }
+
   return (
-    <div ref={ref} className="relative h-full w-full overflow-hidden bg-black">
+    <div
+      ref={ref}
+      className="group relative h-full w-full overflow-hidden bg-black"
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => setLens(null)}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={panel.imageUrl}
@@ -106,9 +128,21 @@ const BookPage = forwardRef<HTMLDivElement, { panel: ReadyPanel }>(function Book
         className="h-full w-full object-contain"
         draggable={false}
       />
-      <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
-        #{String(panel.index).padStart(2, "0")}
-      </div>
+      {lens && (
+        <div
+          className="pointer-events-none absolute rounded-full border border-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.55)] ring-1 ring-black/30"
+          style={{
+            left: lens.x - LENS_SIZE / 2,
+            top: lens.y - LENS_SIZE / 2,
+            width: LENS_SIZE,
+            height: LENS_SIZE,
+            backgroundImage: `url(${panel.imageUrl})`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: `${lens.w * LENS_ZOOM}px ${lens.h * LENS_ZOOM}px`,
+            backgroundPosition: `${-(lens.x * LENS_ZOOM - LENS_SIZE / 2)}px ${-(lens.y * LENS_ZOOM - LENS_SIZE / 2)}px`,
+          }}
+        />
+      )}
     </div>
   );
 });
