@@ -18,12 +18,13 @@ const BASE_PATH = path.join(OUT, "_base.png");
 
 const BASE_PROMPT = [
   "Single comic book page, tall portrait layout, printed on clean white paper.",
+  "This page is a STYLE SAMPLE. It must showcase linework, paneling, color palette, and lettering — not any specific character identity.",
   "4 panels arranged in a clear grid with thin white gutters between them:",
-  "Panel 1 (top, full-width wide shot): Establishing shot of a young person standing on a city rooftop at dusk, city skyline behind them, wind lifting their hair.",
-  "Panel 2 (middle-left, medium shot): Same person turning their head, alert and surprised.",
-  "Panel 3 (middle-right, tight close-up): Close-up on their eyes widening in wonder.",
-  "Panel 4 (bottom, full-width wide shot): Wide shot showing a glowing pendant floating in the sky over the cityscape, the character below looking up in awe, with a single short speech bubble that reads \"Impossible...\".",
-  "Balanced readable composition. No watermark, no logo, no signature, no page number.",
+  "Panel 1 (top, full-width wide shot): An atmospheric cityscape at dusk with dramatic clouds and glowing windows; no humans visible.",
+  "Panel 2 (middle-left, medium shot): Extreme close-up of gloved hands holding an antique pocket watch, warm rim light; only the hands are visible.",
+  "Panel 3 (middle-right, dynamic angle): A low-angle shot of a fluttering flag against a windswept sky, expressive motion lines.",
+  "Panel 4 (bottom, full-width wide shot): A silhouetted figure walking away down a lamp-lit cobbled street, rain-slicked surfaces reflecting lights. Face is not visible. One short speech bubble reads \"Impossible...\".",
+  "Balanced readable composition showing the art style clearly. No identifiable faces, no named characters, no watermark, no logo, no signature, no page number.",
 ].join(" ");
 
 async function downloadTo(dest: string, url: string) {

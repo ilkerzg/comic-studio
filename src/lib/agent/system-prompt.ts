@@ -12,11 +12,12 @@ export function buildSystemPrompt(brief: Brief): string {
     )
     .join("\n");
 
+  const charactersWithSheet = brief.characters.filter((c) => !!c.sheetUrl);
   const referenceMap = [
-    `- #image1: STYLE reference card (${style?.name ?? "selected style"})`,
-    ...brief.characters.map(
+    `- #image1: STYLE reference ONLY (${style?.name ?? "selected style"}). Use its linework, paneling, palette, and lettering style. NEVER reuse any character from this image.`,
+    ...charactersWithSheet.map(
       (c, index) =>
-        `- #image${index + 2}: ${c.name} (${c.role})${c.sheetUrl ? ` - character portrait` : ""}`,
+        `- #image${index + 2}: CHARACTER "${c.name}" (${c.role}). Use this portrait as the canonical identity for ${c.name}; match face, hair, body, and costume whenever ${c.name} appears.`,
     ),
   ].join("\n");
 
@@ -61,12 +62,12 @@ export function buildSystemPrompt(brief: Brief): string {
     `    - dialog: array of { speaker, text }, at most two short lines per panel, empty array if silent`,
     `    - sfx: short onomatopoeia text to letter into the panel, or omit if none`,
     `- prompt: ONE complete rendering prompt for gpt-image-2/edit that will produce the ENTIRE page as a single image with all panels drawn side by side, clear gutters between panels, speech bubbles lettered inside the art, and SFX lettered into the art. The prompt MUST:`,
-    `    - open with: "Single comic book page, ${aspectHint}. Page layout: <layout>. Clear white gutters between panels. All panels share the same art style and preserve the character identities from the reference images."`,
+    `    - open with: "Single comic book page, ${aspectHint}. Page layout: <layout>. Clear white gutters between panels. Use the art style of reference image #image1 only (do NOT copy any character from #image1). Every character shown must match their dedicated reference (#image2..N) exactly."`,
     `    - include the style prompt stub verbatim`,
     `    - describe every sub-panel in reading order as its own paragraph in this exact shape:`,
-    `      "Panel <n> (<position>, <composition>): <action>. <Speaker> says in a speech bubble: \\"<exact line>\\". SFX in the panel: <sfx>."`,
+    `      "Panel <n> (<position>, <composition>): <action>. #image<k> <Character Name> is shown doing X. <Speaker> says in a speech bubble: \\"<exact line>\\". SFX in the panel: <sfx>."`,
     `      Omit the speech bubble clause if the panel is silent. Omit the SFX clause if none.`,
-    `    - reference characters by their #imageN markers from the reference map (e.g. "#image2 <Name>") whenever they appear in a panel, so the model keeps their identity`,
+    `    - every time a cast character appears in a panel, write their #imageN marker before their name so the image model matches their identity to the correct reference. Never mention #image1 next to a character name.`,
     `    - end with a final line containing exactly: style reference: #image1`,
     `    - no markdown, no headings, plain paragraphs separated by blank lines`,
     ``,
@@ -74,6 +75,7 @@ export function buildSystemPrompt(brief: Brief): string {
     `- Every page MUST have at least 3 sub-panels and at most 6.`,
     `- Vary the grid between pages. Do NOT use the same layout on two consecutive pages.`,
     `- Ground every character in the provided character portraits; never invent a new character or change their look.`,
+    `- Reference image #image1 is the STYLE guide only. Never pull characters, outfits, or scene details from it.`,
     `- Speech bubbles, captions, and SFX are drawn as part of the art. Do not describe them as overlays or external elements.`,
     `- Keep bubble text short and readable; bubbles must be legible at print scale.`,
     `- Escalate tension across pages and end with a clear visual closer that matches the tone.`,
