@@ -107,23 +107,33 @@ function FlipbookReader({
   panels: (PanelState & { imageUrl: string })[];
   rtl: boolean;
 }) {
-  const spreads: ((PanelState & { imageUrl: string }) | null)[][] = useMemo(() => {
-    const out: ((PanelState & { imageUrl: string }) | null)[][] = [];
-    out.push([null, panels[0] ?? null]);
-    for (let i = 1; i < panels.length; i += 2) {
-      out.push([panels[i] ?? null, panels[i + 1] ?? null]);
-    }
-    return out;
-  }, [panels]);
-
   const [cursor, setCursor] = useState(0);
+  const [flip, setFlip] = useState<null | { from: number; to: number; dir: 1 | -1 }>(null);
+
+  const total = panels.length;
+  const canPrev = cursor > 0;
+  const canNext = cursor < total - 1;
 
   const go = useCallback(
     (dir: 1 | -1) => {
-      setCursor((c) => Math.max(0, Math.min(spreads.length - 1, c + dir)));
+      setFlip((current) => {
+        if (current) return current;
+        const target = cursor + dir;
+        if (target < 0 || target >= total) return current;
+        return { from: cursor, to: target, dir };
+      });
     },
-    [spreads.length],
+    [cursor, total],
   );
+
+  useEffect(() => {
+    if (!flip) return;
+    const id = window.setTimeout(() => {
+      setCursor(flip.to);
+      setFlip(null);
+    }, 650);
+    return () => window.clearTimeout(id);
+  }, [flip]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -134,83 +144,91 @@ function FlipbookReader({
     return () => window.removeEventListener("keydown", onKey);
   }, [go, rtl]);
 
-  const spread = spreads[cursor];
-  const [left, right] = rtl ? [spread[1], spread[0]] : spread;
+  const aspectRatio =
+    project.brief.aspect === "landscape"
+      ? "16 / 9"
+      : project.brief.aspect === "square"
+        ? "1 / 1"
+        : "3 / 4";
+
+  const backPage = panels[flip ? flip.to : cursor];
+  const flipPage = flip ? panels[flip.from] : null;
+  const flipClass = flip
+    ? (flip.dir === 1) === !rtl
+      ? "flip-toward-left"
+      : "flip-toward-right"
+    : "";
 
   return (
     <div className="mt-6">
-      <TopBar panelCount={panels.length} project={project} />
+      <TopBar panelCount={total} project={project} />
       <div className="relative mt-6 flex items-center justify-center gap-4">
         <button
           type="button"
-          onClick={() => go(-1)}
-          disabled={cursor === 0}
-          aria-label="Previous spread"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
+          onClick={() => go(rtl ? 1 : -1)}
+          disabled={rtl ? !canNext : !canPrev}
+          aria-label={rtl ? "Next page" : "Previous page"}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
 
         <div
-          className="ink-border grid aspect-[3/2] w-full max-w-[1100px] grid-cols-2 overflow-hidden rounded-2xl bg-[oklch(0.07_0_0)]"
-          style={{ boxShadow: "inset 0 0 0 1.5px oklch(0 0 0 / 0.55), 0 30px 80px -20px oklch(0 0 0 / 0.75)" }}
+          className="ink-border relative overflow-hidden rounded-2xl bg-[oklch(0.07_0_0)]"
+          style={{
+            perspective: "2500px",
+            aspectRatio,
+            height: "min(82vh, 1100px)",
+            maxWidth: "min(92vw, 1100px)",
+            boxShadow:
+              "inset 0 0 0 1.5px oklch(0 0 0 / 0.55), 0 30px 80px -20px oklch(0 0 0 / 0.75)",
+          }}
         >
-          <PageSide panel={left} side="left" />
-          <PageSide panel={right} side="right" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={backPage.imageUrl}
+              alt={`Page ${backPage.index}`}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          {flipPage && (
+            <div
+              className={cn(
+                "absolute inset-0 flex items-center justify-center bg-black will-change-transform",
+                flipClass,
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={flipPage.imageUrl}
+                alt={`Page ${flipPage.index}`}
+                className="h-full w-full object-contain"
+              />
+            </div>
+          )}
+          <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
+            #{String(backPage.index).padStart(2, "0")}
+          </div>
         </div>
 
         <button
           type="button"
-          onClick={() => go(1)}
-          disabled={cursor === spreads.length - 1}
-          aria-label="Next spread"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
+          onClick={() => go(rtl ? -1 : 1)}
+          disabled={rtl ? !canPrev : !canNext}
+          aria-label={rtl ? "Previous page" : "Next page"}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface text-foreground/75 hover:border-white/20 disabled:opacity-30"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-2 text-[11.5px] text-foreground/55">
-        <span>Spread {cursor + 1} / {spreads.length}</span>
+        <span>
+          Page {cursor + 1} / {total}
+        </span>
         <span>·</span>
         <span>Use ← and → to turn the page{rtl ? " (manga: reversed)" : ""}</span>
-      </div>
-    </div>
-  );
-}
-
-function PageSide({
-  panel,
-  side,
-}: {
-  panel: (PanelState & { imageUrl: string }) | null;
-  side: "left" | "right";
-}) {
-  if (!panel) {
-    return (
-      <div
-        className={cn(
-          "flex h-full flex-col items-center justify-center bg-[oklch(0.08_0_0)] text-[11px] uppercase tracking-[0.2em] text-foreground/30",
-          side === "left" ? "border-r border-black/60" : "",
-        )}
-      >
-        <span className="font-[family-name:var(--font-display)] text-[32px] tracking-[0.1em] text-foreground/20">
-          COMIC STUDIO
-        </span>
-      </div>
-    );
-  }
-  return (
-    <div
-      className={cn(
-        "relative flex h-full items-center justify-center bg-black",
-        side === "left" ? "border-r border-black/60" : "",
-      )}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={panel.imageUrl} alt={`Page ${panel.index}`} className="max-h-full max-w-full object-contain" />
-      <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white/85 backdrop-blur">
-        #{String(panel.index).padStart(2, "0")}
       </div>
     </div>
   );
